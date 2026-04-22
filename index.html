@@ -132,7 +132,7 @@ window.auth = firebase.auth();
 
 // ── App config ────────────────────────────────────────────────
 window.SF = {
-  CLIENT_ID: "405965576978-cpaqg359shteuv6ubcevg5jvkfjq4okp.apps.googleusercontent.com",
+  CLIENT_ID: "PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID_HERE.apps.googleusercontent.com",
   DOMAIN:    "tothenew.com",
   ADMINS:    ["rishabh.mehrotra@tothenew.com","avantika.sinha@tothenew.com"],
   ORG:       "To The New",
@@ -162,7 +162,7 @@ const surveysRef=()=>db.collection("surveys");
 const responsesRef=sid=>db.collection("surveys").doc(sid).collection("responses");
 
 async function loadSurveys(){
-  const snap=await surveysRef().orderBy("createdAt","desc").get();
+  const snap=await surveysRef().get();
   return snap.docs.map(d=>({id:d.id,...d.data()}));
 }
 async function saveSurvey(sv){
@@ -338,8 +338,9 @@ function AdminApp({auth,out,t}){
 
   /* real-time listener on surveys */
   useEffect(()=>{
-    const unsub=surveysRef().orderBy("createdAt","desc").onSnapshot(snap=>{
-      setSurveys(snap.docs.map(d=>({id:d.id,...d.data()})));
+    const unsub=surveysRef().onSnapshot(snap=>{
+      const sorted=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+      setSurveys(sorted);
       setLoading(false);
     },err=>{console.error(err);setLoading(false);});
     return()=>unsub();
@@ -749,12 +750,16 @@ function UserApp({auth,out,t}){
   const [sel,setSel]=useState(null);
   const [myResponses,setMyResponses]=useState({});
 
-  /* real-time active surveys */
+  /* real-time active surveys — no orderBy to avoid composite index requirement */
   useEffect(()=>{
-    const unsub=surveysRef().where("status","==","active").orderBy("createdAt","desc").onSnapshot(snap=>{
-      setSurveys(snap.docs.map(d=>({id:d.id,...d.data()})));
+    const unsub=surveysRef().onSnapshot(snap=>{
+      const active=snap.docs
+        .map(d=>({id:d.id,...d.data()}))
+        .filter(s=>s.status==="active")
+        .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+      setSurveys(active);
       setLoading(false);
-    },err=>{setLoading(false);console.error(err);});
+    },err=>{setLoading(false);console.error(err);t("❌ Error loading surveys: "+err.message);});
     return()=>unsub();
   },[]);
 
