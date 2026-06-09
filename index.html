@@ -902,13 +902,22 @@ function Toast({ msg, done }) {
   return <div className="toast">{msg}</div>;
 }
 
-/* TTN LOGO SVG */
+/* TTN LOGO */
 function TTNLogo({ size = 48 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="64" height="64" rx="12" fill="white" fillOpacity="0.1" />
-      <text x="32" y="44" fontSize="36" fontWeight="800" fill="white" textAnchor="middle" fontFamily="Arial">TTN</text>
-    </svg>
+    <div style={{
+      width: size,
+      height: size,
+      background: 'linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%)',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontWeight: 800,
+      fontSize: size * 0.5,
+      color: 'white',
+      boxShadow: '0 4px 12px rgba(235, 54, 36, 0.4)'
+    }}>TTN</div>
   );
 }
 
@@ -1023,7 +1032,22 @@ function AdminApp({ auth, out, t }) {
   }, [surveys]);
 
   const go = p => { setPg(p); setSel(null); };
-  const handleNew = async sv => { try { sv.questions = DEFAULT_QUESTIONS; await saveSurvey(sv); setNm(false); t("✅ Survey created with all categories!"); } catch (e) { t("❌ Error: " + e.message); } };
+  const handleNew = async sv => { 
+    try { 
+      const surveyWithQuestions = { 
+        ...sv, 
+        questions: DEFAULT_QUESTIONS,
+        status: "draft",
+        responseCount: 0,
+        createdAt: new Date().toISOString()
+      };
+      await saveSurvey(surveyWithQuestions); 
+      setNm(false); 
+      t("✅ Survey created with all categories and questions!"); 
+    } catch (e) { 
+      t("❌ Error: " + e.message); 
+    } 
+  };
   const handleUpd = async (id, patch) => { try { await updateSurvey(id, patch); } catch (e) { t("❌ Error: " + e.message); } };
 
   if (loading) return <div className="loader"><div className="spinner" /><p>Loading...</p></div>;
@@ -1147,7 +1171,10 @@ function SurveyList({ surveys, onSel, upd, t, onNew }) {
 }
 
 function SurveyDetail({ sv, back, upd, t, atab, setAtab }) {
-  const [qs, setQs] = useState(sv.questions || DEFAULT_QUESTIONS);
+  const [qs, setQs] = useState(() => {
+    const questions = sv.questions || DEFAULT_QUESTIONS;
+    return Array.isArray(questions) && questions.length > 0 ? questions : DEFAULT_QUESTIONS;
+  });
   const [responses, setResponses] = useState([]);
   const [loadingR, setLoadingR] = useState(true);
   const [qm, setQm] = useState(false);
@@ -1162,7 +1189,10 @@ function SurveyDetail({ sv, back, upd, t, atab, setAtab }) {
     return () => unsub();
   }, [sv.id]);
 
-  useEffect(() => setQs(sv.questions || DEFAULT_QUESTIONS), [sv.questions]);
+  useEffect(() => {
+    const questions = sv.questions || DEFAULT_QUESTIONS;
+    setQs(Array.isArray(questions) && questions.length > 0 ? questions : DEFAULT_QUESTIONS);
+  }, [sv.questions]);
 
   const save = async () => { try { await upd(sv.id, { questions: qs }); t("💾 Saved!"); } catch (e) { t("❌ Error: " + e.message); } };
   const tog = async () => { if (sv.status === "draft") { await upd(sv.id, { status: "active" }); t("✅ Active!"); } else if (sv.status === "active") { await upd(sv.id, { status: "ended" }); t("⏹ Ended."); } };
@@ -1447,7 +1477,12 @@ function NewSurveyModal({ onClose, onSave }) {
         </div>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" disabled={saving} onClick={async () => { if (!f.title.trim()) return alert("Title required."); setSaving(true); await onSave({ ...f, status: "draft", responseCount: 0, createdAt: new Date().toISOString() }); setSaving(false); }}>{saving ? "Creating..." : "Create"}</button>
+          <button className="btn btn-primary" disabled={saving} onClick={async () => { 
+            if (!f.title.trim()) return alert("Title required."); 
+            setSaving(true); 
+            await onSave(f);
+            setSaving(false); 
+          }}>{saving ? "Creating..." : "Create"}</button>
         </div>
       </div>
     </div>
@@ -1570,7 +1605,7 @@ function SurveyFill({ sv, auth, back, submit, already }) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(already);
   const [submitting, setSubmitting] = useState(false);
-  const qs = sv.questions || DEFAULT_QUESTIONS;
+  const qs = (sv.questions && Array.isArray(sv.questions) && sv.questions.length > 0) ? sv.questions : DEFAULT_QUESTIONS;
   const q = qs[step];
   const total = qs.length;
   const pct = Math.round((step / Math.max(total, 1)) * 100);
@@ -1606,8 +1641,12 @@ function SurveyFill({ sv, auth, back, submit, already }) {
     <div className="survey-fill-width main">
       <button className="btn btn-ghost" style={{ marginBottom: 22 }} onClick={back}>← Back</button>
       <div className="card" style={{ marginBottom: 22, borderLeft: "4px solid #EB3624" }}>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>{sv.title}</div>
-        <div style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>{sv.desc}</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>
+          {sv.title || "Employee Engagement Survey"}
+        </div>
+        <div style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>
+          {sv.desc || "Share your feedback to help us build a better workplace"}
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 26 }}>
         <span style={{ fontSize: 13, color: "#6B7280", whiteSpace: "nowrap" }}>Q {step + 1} of {total}</span>
