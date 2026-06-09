@@ -1208,7 +1208,7 @@ function AdminApp({ auth, out, t }) {
     <div style={{ minHeight: "100vh", background: "#F8FAFB" }}>
       <div className="nav">
         <div className="nav-logo">
-          <TTNLogo size={48} />
+          <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAEYARgDASIAAhEBAxEB/8QAHQABAAEFAQEBAAAAAAAAAAAAAggEBQYHCQMCAv/EAFcQAAEDAwEEBQQIEAoLAQEAAAEAAgMEBREGBxIhMQgTQVFhInGBkRQVN1V0obPSCRYYIzI2RlJicnWUsbK00TM4QlV2goSFwcQkNDVDY5KTlcLT8HPh/8QAHAEBAAIDAQEBAAAAAAAAAAAAAAEEAgUGBwMI/8QANBEAAgEDAQYDBwQCAwEAAAAAAAECAwQRBQYSITFBUWFxgRMikaGxwdEHFOHwMjMVI0JS/9oADAMBAAIRAxEAPwCZaIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiA//" style={{ width: 50, height: 50, objectFit: "contain" }} alt="TTN Logo" />
           <div className="nav-branding">
             <div className="nav-logo-text">{SF.APP}</div>
             <div className="nav-org">{SF.ORG}</div>
@@ -1592,9 +1592,32 @@ function generateRatingAnalysis(answers) {
 
 function generateTextAnalysis(answers) {
   if (!answers.length) return { summary: "No responses collected yet" };
+  
+  // AI-style analysis for text responses
   const uniqueAnswers = [...new Set(answers)];
   const keywordCount = uniqueAnswers.length;
-  return { summary: `${keywordCount} unique qualitative insights collected. Responses show diverse perspectives on this topic.` };
+  
+  // Common sentiment keywords
+  const positiveKeywords = ["good", "great", "excellent", "happy", "satisfied", "improved", "better", "positive", "love", "appreciate", "wonderful", "amazing", "fantastic"];
+  const negativeKeywords = ["bad", "poor", "issue", "problem", "concern", "disappointed", "frustrated", "difficult", "hate", "dislike", "terrible", "awful"];
+  
+  let positiveCount = 0;
+  let negativeCount = 0;
+  
+  answers.forEach(answer => {
+    const lowerAnswer = answer.toLowerCase();
+    positiveKeywords.forEach(word => { if (lowerAnswer.includes(word)) positiveCount++; });
+    negativeKeywords.forEach(word => { if (lowerAnswer.includes(word)) negativeCount++; });
+  });
+  
+  let sentiment = "Neutral";
+  if (positiveCount > negativeCount) sentiment = "Positive 😊";
+  else if (negativeCount > positiveCount) sentiment = "Needs Attention ⚠️";
+  else if (positiveCount > 0) sentiment = "Mixed Feedback 📊";
+  
+  return { 
+    summary: `🤖 AI Analysis: ${keywordCount} unique insights | Sentiment: ${sentiment} | Response patterns detected across ${answers.length} feedback entries`
+  };
 }
 
 function AllResponses({ surveys }) {
