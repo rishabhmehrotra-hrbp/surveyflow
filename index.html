@@ -875,30 +875,112 @@ function exportXL(sv, responses) {
   try {
     const wb = XLSX.utils.book_new();
     
-    // Sheet 1: Raw Responses
-    const h = ["#", "Email", "Full Name", "Submitted At", ...sv.questions.map((q, i) => `Q${i + 1}`), "Submitted Date"];
-    const rows = responses.map((r, i) => [i + 1, r.email, r.name || "", fdt(r.at), ...sv.questions.map(q => r.ans[q.id] || ""), fd(r.at)]);
-    const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
-    ws["!cols"] = [{ wch: 4 }, { wch: 32 }, { wch: 24 }, { wch: 22 }, ...sv.questions.map(q => ({ wch: 30 })), { wch: 15 }];
-    XLSX.utils.book_append_sheet(wb, ws, "Responses");
+    // Create question headers with full text and category
+    const questionHeaders = sv.questions.map((q, i) => {
+      const categoryInfo = Object.entries(SURVEY_CATEGORIES).find(([key]) => key === q.category);
+      const categoryName = categoryInfo ? categoryInfo[1].label : "Unknown";
+      return `Q${i + 1}: [${categoryName}] ${q.text}`;
+    });
+    
+    // Sheet 1: Detailed Response Analysis with Individual Summaries
+    const headers = ["#", "Email", "Full Name", "Submitted At", ...questionHeaders, "Average", "Summary"];
+    
+    const rows = responses.map((r, i) => {
+      // Get all rating questions and their answers for this person
+      const ratingQuestions = sv.questions.filter(q => q.type === "rating");
+      const ratingAnswers = ratingQuestions.map((q, idx) => {
+        const answer = r.ans[q.id];
+        return { answer: parseInt(answer), qIndex: sv.questions.indexOf(q) };
+      }).filter(v => !isNaN(v.answer));
+      
+      const avgRating = ratingAnswers.length > 0 
+        ? (ratingAnswers.reduce((sum, v) => sum + v.answer, 0) / ratingAnswers.length).toFixed(2) 
+        : "N/A";
+      
+      // Find questions with low ratings (≤3) and get their question numbers
+      const concerns = [];
+      sv.questions.forEach((q, qIdx) => {
+        if (q.type === "rating") {
+          const answer = parseInt(r.ans[q.id]);
+          if (!isNaN(answer) && answer <= 3) {
+            concerns.push(qIdx + 1); // Store question number (1-indexed)
+          }
+        }
+      });
+      
+      // Create summary based on concerns
+      let summary = "";
+      if (concerns.length === 0) {
+        if (avgRating >= 4.5) {
+          summary = "🌟 No Concerns, Excellent feedback!";
+        } else if (avgRating >= 4) {
+          summary = "✅ No Concerns, Very happy";
+        } else if (avgRating >= 3.5) {
+          summary = "👍 No Concerns, Satisfied";
+        } else {
+          summary = "No specific low ratings";
+        }
+      } else {
+        summary = `⚠️ Major concerns in Q${concerns.join(", Q")}`;
+      }
+      
+      // Build row with all answers
+      const answerValues = sv.questions.map(q => r.ans[q.id] || "");
+      return [i + 1, r.email, r.name || "", fdt(r.at), ...answerValues, avgRating, summary];
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    
+    // Set column widths - make question columns narrower and summary wider
+    const colWidths = [
+      { wch: 4 },           // #
+      { wch: 28 },          // Email
+      { wch: 18 },          // Full Name
+      { wch: 18 },          // Submitted At
+      ...sv.questions.map(q => ({ wch: 4 })), // Question columns - narrow for ratings
+      { wch: 12 },          // Average Rating
+      { wch: 55 }           // Summary - wide for detailed text
+    ];
+    ws["!cols"] = colWidths;
+    
+    // Wrap text in headers for better readability
+    ws["!rows"] = [{ hpx: 40 }]; // Make header row taller
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Response Analysis");
 
-    // Sheet 2: Summary by Category
-    const summaryData = [["Category Analysis Summary"]];
+    // Sheet 2: Detailed Category Summary
+    const summaryData = [["CATEGORY WISE ANALYSIS"]];
     summaryData.push([]);
     
     Object.entries(SURVEY_CATEGORIES).forEach(([key, cat]) => {
       const catQs = sv.questions.filter(q => q.category === key);
       if (catQs.length > 0) {
-        summaryData.push([cat.label, `${catQs.length} questions`]);
-        catQs.forEach(q => {
+        summaryData.push([cat.label, "", "", ""]);
+        
+        catQs.forEach((q, idx) => {
           const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
           const count = ans.length;
           const responseRate = count > 0 ? ((count / responses.length) * 100).toFixed(1) : "0";
+          
           if (q.type === "rating") {
-            const avg = count > 0 ? (ans.map(a => parseInt(a)).reduce((a, b) => a + b, 0) / count).toFixed(1) : "N/A";
-            summaryData.push([`  ${q.text}`, `Avg: ${avg}/5 (${count}/${responses.length} = ${responseRate}%)`]);
+            const ratings = ans.map(a => parseInt(a));
+            const avg = ratings.length > 0 ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2) : "N/A";
+            const concernCount = ratings.filter(r => r <= 3).length;
+            const satisfied = ratings.filter(r => r >= 4).length;
+            
+            summaryData.push([
+              `  ${q.text}`,
+              `Avg: ${avg}/5`,
+              `Concerns: ${concernCount}`,
+              `Satisfied: ${satisfied}`
+            ]);
           } else {
-            summaryData.push([`  ${q.text}`, `${count}/${responses.length} = ${responseRate}%`]);
+            summaryData.push([
+              `  ${q.text}`,
+              `Responses: ${count}`,
+              `Rate: ${responseRate}%`,
+              ""
+            ]);
           }
         });
         summaryData.push([]);
@@ -906,40 +988,45 @@ function exportXL(sv, responses) {
     });
     
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    summarySheet["!cols"] = [{ wch: 50 }, { wch: 40 }];
-    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+    summarySheet["!cols"] = [{ wch: 70 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Category Analysis");
 
     // Sheet 3: Category Statistics Table
-    const statsData = [["Category", "Questions", "Total Responses", "Response Rate %", "Average Rating (if applicable)"]];
+    const statsData = [["Category", "Total Questions", "Average Rating", "High Concerns (%)", "Satisfied (%)", "Response Rate"]];
     Object.entries(SURVEY_CATEGORIES).forEach(([key, cat]) => {
       const catQs = sv.questions.filter(q => q.category === key);
       const ratingQs = catQs.filter(q => q.type === "rating");
-      if (catQs.length > 0) {
-        let avgRating = "N/A";
-        if (ratingQs.length > 0) {
-          const allRatings = [];
-          ratingQs.forEach(q => {
-            const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
-            ans.forEach(a => allRatings.push(parseInt(a)));
+      if (ratingQs.length > 0) {
+        let totalConcerns = 0;
+        let totalSatisfied = 0;
+        const allRatings = [];
+        
+        ratingQs.forEach(q => {
+          const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
+          ans.forEach(a => {
+            const rating = parseInt(a);
+            allRatings.push(rating);
+            if (rating <= 3) totalConcerns++;
+            if (rating >= 4) totalSatisfied++;
           });
-          if (allRatings.length > 0) {
-            avgRating = (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2);
-          }
-        }
-        const catResponses = catQs.reduce((sum, q) => {
-          const count = responses.filter(r => r.ans?.[q.id]).length;
-          return sum + count;
-        }, 0);
-        const responseRate = responses.length > 0 ? ((catResponses / (catQs.length * responses.length)) * 100).toFixed(1) : "0";
-        statsData.push([cat.label, catQs.length, catResponses, responseRate, avgRating]);
+        });
+        
+        const avgRating = allRatings.length > 0 ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2) : "N/A";
+        const concernPct = allRatings.length > 0 ? ((totalConcerns / allRatings.length) * 100).toFixed(1) : "0";
+        const satisfiedPct = allRatings.length > 0 ? ((totalSatisfied / allRatings.length) * 100).toFixed(1) : "0";
+        const responseRate = (ratingQs.length > 0 && responses.length > 0) 
+          ? ((allRatings.length / (ratingQs.length * responses.length)) * 100).toFixed(1) 
+          : "0";
+        
+        statsData.push([cat.label, ratingQs.length, avgRating, concernPct + "%", satisfiedPct + "%", responseRate + "%"]);
       }
     });
     
     const statsSheet = XLSX.utils.aoa_to_sheet(statsData);
-    statsSheet["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 25 }];
+    statsSheet["!cols"] = [{ wch: 28 }, { wch: 15 }, { wch: 16 }, { wch: 18 }, { wch: 14 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, statsSheet, "Statistics");
 
-    XLSX.writeFile(wb, `${sv.title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `${sv.title.replace(/\s+/g, "_")}_Survey_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
   } catch (e) {
     alert("Export error: " + e.message);
   }
