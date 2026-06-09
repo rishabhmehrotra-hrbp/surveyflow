@@ -8,7 +8,7 @@
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-<!-- Firebase v10 (modular via CDN compat) -->
+<!-- Firebase v10 -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -18,105 +18,658 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <!-- Excel export -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
-html,body,#root{min-height:100vh}
-body{background:#f4f6fb}
-:root{
-  --p:#1a56db;--pd:#1e3a8a;--ac:#e11d48;
-  --su:#059669;--wa:#d97706;--da:#dc2626;
-  --bd:#e5e7eb;--mu:#6b7280;--tx:#111827;--bg:#f4f6fb;
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+html, body, #root { min-height: 100vh; }
+body { background: #F8FAFB; }
+
+/* TTN COLOR PALETTE */
+:root {
+  --ttn-red: #EB3624;
+  --ttn-darkblue: #00519F;
+  --ttn-purple: #623FA3;
+  --ttn-cyan: #00C2E9;
+  --ttn-gold: #F9AD1B;
+  --success: #10B981;
+  --danger: #EF4444;
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-900: #111827;
 }
-.nav{background:var(--pd);color:#fff;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(30,58,138,.35)}
-.nav-logo{display:flex;align-items:center;gap:10px}
-.nav-logo-text{font-size:19px;font-weight:800;letter-spacing:-.5px}
-.nav-logo-badge{background:var(--ac);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
-.nav-r{display:flex;align-items:center;gap:12px}
-.nav-user{font-size:13px;color:rgba(255,255,255,.85);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lay{display:flex;min-height:calc(100vh - 58px)}
-.side{width:224px;background:#fff;border-right:1px solid var(--bd);padding:16px 0;flex-shrink:0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto}
-.si{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:14px;color:var(--mu);cursor:pointer;border-left:3px solid transparent;transition:all .14s;user-select:none}
-.si:hover{background:#eff6ff;color:var(--p)}
-.si.on{background:#eff6ff;color:var(--p);border-left-color:var(--p);font-weight:600}
-.side-sec{margin:16px 20px 6px;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px}
-.main{flex:1;padding:28px;overflow-y:auto}
-.card{background:#fff;border-radius:12px;border:1px solid var(--bd);padding:22px;margin-bottom:18px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .14s;white-space:nowrap}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.bp{background:var(--p);color:#fff}.bp:hover:not(:disabled){background:#1d4ed8}
-.bs{background:var(--su);color:#fff}.bs:hover:not(:disabled){background:#047857}
-.bw{background:var(--wa);color:#fff}.bw:hover:not(:disabled){background:#b45309}
-.bo{background:#fff;color:var(--p);border:1.5px solid var(--p)}.bo:hover:not(:disabled){background:#eff6ff}
-.bg2{background:#fff;color:var(--mu);border:1px solid var(--bd)}.bg2:hover:not(:disabled){background:#f9fafb}
-.bdg{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
-.bdg-active{background:#d1fae5;color:#065f46}
-.bdg-draft{background:#fef3c7;color:#92400e}
-.bdg-ended{background:#fee2e2;color:#991b1b}
-.fi{width:100%;padding:10px 13px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;color:var(--tx);outline:none;background:#fff;transition:border .14s}
-.fi:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
-.fl{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--tx)}
-.fg{margin-bottom:18px}
-.tab-r{display:flex;border-bottom:2px solid var(--bd);margin-bottom:22px}
-.tab{padding:10px 22px;font-size:14px;font-weight:500;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .14s}
-.tab.on{color:var(--p);border-bottom-color:var(--p);font-weight:600}
-.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--bd)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#f9fafb;padding:10px 16px;text-align:left;font-weight:600;font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--bd)}
-td{padding:13px 16px;border-bottom:1px solid var(--bd);color:var(--tx);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#fafafa}
-.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
-.sc{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:all .2s}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--p)}
-.sc.active::before{background:var(--su)}.sc.ended::before{background:var(--da)}
-.sc:hover{box-shadow:0 6px 24px rgba(26,86,219,.1);transform:translateY(-2px)}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-.stat-card{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:18px}
-.stat-n{font-size:30px;font-weight:800;color:var(--p);line-height:1}
-.stat-l{font-size:12px;color:var(--mu);margin-top:4px}
-.mbg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px}
-.mod{background:#fff;border-radius:16px;padding:30px;width:560px;max-width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.22)}
-.mod-title{font-size:18px;font-weight:700;margin-bottom:22px;color:var(--tx)}
-.lw{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e3a8a 0%,#1a56db 55%,#0891b2 100%);padding:16px}
-.lc{background:#fff;border-radius:20px;padding:44px 40px;width:460px;max-width:100%;box-shadow:0 28px 72px rgba(0,0,0,.28)}
-.ll{text-align:center;margin-bottom:30px}
-.domain-pill{display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;padding:5px 14px;font-size:12px;color:var(--p);font-weight:600;margin-bottom:16px}
-.rb{flex:1;background:#e5e7eb;border-radius:99px;height:14px;overflow:hidden}
-.rf{height:100%;background:var(--p);border-radius:99px;transition:width .4s}
-.tog{width:44px;height:24px;border-radius:99px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;border:none;background:#d1d5db}
-.tog::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-.tog.on{background:var(--su)}.tog.on::after{left:23px}
-.sfw{max-width:660px;margin:0 auto}
-.pb{background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden;margin-bottom:26px}
-.pf{height:100%;background:var(--p);border-radius:99px;transition:width .3s}
-.qnum{width:32px;height:32px;background:var(--p);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.opt{padding:14px 18px;border:2px solid var(--bd);border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:12px;transition:all .12s}
-.opt:hover{border-color:var(--p);background:#eff6ff}.opt.sel{border-color:var(--p);background:#eff6ff}
-.rat{width:54px;height:54px;border:2px solid var(--bd);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:700;font-size:18px;transition:all .12s}
-.rat:hover{border-color:var(--p)}.rat.sel{border-color:var(--p);background:var(--p);color:#fff}
-.toast{position:fixed;bottom:26px;right:26px;background:#111827;color:#fff;padding:13px 22px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 6px 24px rgba(0,0,0,.3);animation:su .3s ease;max-width:340px}
-@keyframes su{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
-.empty{text-align:center;padding:52px 20px;color:var(--mu)}
-.loader{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;background:var(--bg)}
-.spinner{width:44px;height:44px;border:4px solid #e5e7eb;border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.qcard{background:#f9fafb;border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:10px}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--su);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
-@media(max-width:680px){.stat-grid{grid-template-columns:repeat(2,1fr)}.side{display:none}.main{padding:16px}.sg{grid-template-columns:1fr}}
+
+/* ========== NAVIGATION ========== */
+.nav {
+  background: linear-gradient(135deg, #00519F 0%, #003C7A 100%);
+  color: white;
+  padding: 0 28px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0, 81, 159, 0.2);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.nav-logo-icon {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-logo-text {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.5px;
+}
+
+.nav-badge {
+  background: linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+
+.nav-r {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-user-name { font-weight: 600; color: white; display: block; }
+
+/* ========== LAYOUT ========== */
+.lay { display: flex; min-height: calc(100vh - 72px); }
+.side { width: 260px; background: white; border-right: 2px solid var(--gray-200); padding: 20px 0; position: sticky; top: 72px; height: calc(100vh - 72px); overflow-y: auto; }
+
+.si {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  color: var(--gray-700);
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: all 0.2s;
+}
+
+.si:hover { background: #FFF5F2; color: var(--ttn-red); }
+.si.on {
+  background: linear-gradient(90deg, rgba(235, 54, 36, 0.1) 0%, transparent 100%);
+  color: var(--ttn-red);
+  border-left-color: var(--ttn-red);
+  font-weight: 600;
+}
+
+.side-sec { margin: 20px 20px 8px; font-size: 10px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 1px; }
+
+.main { flex: 1; padding: 36px 40px; overflow-y: auto; background: #F8FAFB; }
+
+/* ========== CARDS ========== */
+.card {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid var(--gray-200);
+  padding: 24px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+}
+
+.card:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+
+/* ========== BUTTONS ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: linear-gradient(135deg, #EB3624 0%, #D42C1B 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(235, 54, 36, 0.4);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(235, 54, 36, 0.5);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #F9AD1B 0%, #D97706 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(249, 173, 27, 0.4);
+}
+
+.btn-warning:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(249, 173, 27, 0.5);
+}
+
+.btn-outline {
+  background: white;
+  color: var(--ttn-red);
+  border: 2px solid var(--ttn-red);
+}
+
+.btn-outline:hover:not(:disabled) { background: #FFF5F2; }
+
+.btn-ghost {
+  background: white;
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+}
+
+.btn-ghost:hover:not(:disabled) { background: var(--gray-50); color: var(--ttn-red); }
+
+/* ========== STATS GRID ========== */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 24px;
+  border-left: 5px solid var(--ttn-red);
+  box-shadow: 0 2px 8px rgba(235, 54, 36, 0.08);
+  transition: all 0.3s;
+}
+
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(235, 54, 36, 0.15); }
+
+.stat-number {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--ttn-red);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--gray-700);
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* ========== BADGES ========== */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.badge-active { background: #D1FAE5; color: #065F46; }
+.badge-draft { background: #FEF3C7; color: #92400E; }
+.badge-ended { background: #FEE2E2; color: #991B1B; }
+
+/* ========== FORMS ========== */
+.input, .textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--gray-900);
+  outline: none;
+  background: white;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.input:focus, .textarea:focus {
+  border-color: var(--ttn-red);
+  box-shadow: 0 0 0 4px rgba(235, 54, 36, 0.1);
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--gray-900);
+}
+
+.form-group { margin-bottom: 18px; }
+
+/* ========== TABS ========== */
+.tab-row {
+  display: flex;
+  border-bottom: 2px solid var(--gray-200);
+  margin-bottom: 24px;
+  gap: 8px;
+}
+
+.tab {
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  color: var(--ttn-red);
+  border-bottom-color: var(--ttn-red);
+  font-weight: 600;
+}
+
+/* ========== TABLES ========== */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  background: linear-gradient(90deg, #F8FAFB 0%, #F0F4F8 100%);
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 2px solid var(--gray-200);
+}
+
+td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--gray-900);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--gray-50); }
+
+/* ========== SURVEY GRID ========== */
+.survey-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.survey-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: 24px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  border-top: 5px solid var(--ttn-red);
+}
+
+.survey-card.active { border-top-color: var(--success); }
+.survey-card.ended { border-top-color: var(--danger); }
+
+.survey-card:hover {
+  box-shadow: 0 12px 32px rgba(235, 54, 36, 0.2);
+  transform: translateY(-4px);
+}
+
+/* ========== PROGRESS BAR ========== */
+.progress-bar {
+  background: var(--gray-200);
+  border-radius: 99px;
+  height: 7px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ttn-red) 0%, var(--ttn-gold) 100%);
+  border-radius: 99px;
+  transition: width 0.4s;
+}
+
+/* ========== QUESTION STYLING ========== */
+.question-number {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #EB3624 0%, #D42C1B 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(235, 54, 36, 0.4);
+}
+
+.option {
+  padding: 14px 16px;
+  border: 2px solid var(--gray-200);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.option:hover { border-color: var(--ttn-red); background: #FFF5F2; }
+.option.selected {
+  border-color: var(--ttn-red);
+  background: rgba(235, 54, 36, 0.08);
+  font-weight: 600;
+}
+
+.rating-button {
+  width: 60px;
+  height: 60px;
+  border: 2px solid var(--gray-200);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 18px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.rating-button:hover { border-color: var(--ttn-red); }
+.rating-button.selected {
+  border-color: var(--ttn-red);
+  background: linear-gradient(135deg, #EB3624 0%, #D42C1B 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(235, 54, 36, 0.4);
+}
+
+/* ========== ANALYTICS ========== */
+.analytics-box {
+  background: linear-gradient(135deg, #FFF5F2 0%, #FFFFFF 100%);
+  border: 1px solid rgba(235, 54, 36, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-left: 4px solid var(--ttn-red);
+}
+
+.chart-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.chart-container {
+  position: relative;
+  height: 340px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  padding: 16px;
+}
+
+/* ========== MODALS ========== */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 16px;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  width: 560px;
+  max-width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 22px;
+  color: var(--gray-900);
+}
+
+/* ========== LOGIN ========== */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00519F 0%, #003C7A 50%, #00C2E9 100%);
+  padding: 16px;
+}
+
+.login-container {
+  background: white;
+  border-radius: 20px;
+  padding: 44px 40px;
+  width: 460px;
+  max-width: 100%;
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.28);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-logo { font-size: 48px; margin-bottom: 12px; }
+.login-title { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+/* ========== EMPTY STATE ========== */
+.empty-state {
+  text-align: center;
+  padding: 52px 20px;
+  color: var(--gray-700);
+}
+
+.empty-icon { font-size: 64px; margin-bottom: 16px; }
+.empty-title { font-size: 17px; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; }
+
+/* ========== LOADER ========== */
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--gray-50);
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--ttn-red);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ========== TOAST ========== */
+.toast {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  background: var(--gray-900);
+  color: white;
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .side { display: none; }
+  .main { padding: 20px; }
+  .survey-grid { grid-template-columns: 1fr; }
+  .chart-wrapper { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .nav { padding: 0 12px; }
+  .nav-logo-text { font-size: 16px; }
+  .main { padding: 16px; }
+  .card { padding: 16px; }
+  .stat-grid { grid-template-columns: 1fr; }
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.question-card {
+  background: #F9FAFB;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 99px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  border: none;
+  background: #d1d5db;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle.on {
+  background: var(--success);
+}
+
+.toggle.on::after {
+  left: 23px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.survey-fill-width { max-width: 680px; margin: 0 auto; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
-<!-- ═══════════════════════════════════════
-     CONFIGURATION — Pre-configured for To The New
-     ═══════════════════════════════════════ -->
 <script>
-// ── Firebase config (surveyflow-ttn project) ──────────────────
 firebase.initializeApp({
   apiKey: "AIzaSyBjPuPi8E8OjvQJtH8UV3Et48-5pCMWiQI",
   authDomain: "surveyflow-ttn-b952e.firebaseapp.com",
@@ -127,196 +680,185 @@ firebase.initializeApp({
   measurementId: "G-B8C4SXQT4K"
 });
 
-window.db  = firebase.firestore();
+window.db = firebase.firestore();
 window.auth = firebase.auth();
-
-// ── App config ────────────────────────────────────────────────
 window.SF = {
   CLIENT_ID: "166609757158-n125ruoni0f9mid9otef99sltun3loh1.apps.googleusercontent.com",
-  DOMAIN:    "tothenew.com",
-  ADMINS:    ["rishabh.mehrotra@tothenew.com","avantika.sinha@tothenew.com"],
-  ORG:       "To The New",
-  APP:       "SurveyFlow"
+  DOMAIN: "tothenew.com",
+  ADMINS: ["rishabh.mehrotra@tothenew.com", "avantika.sinha@tothenew.com"],
+  ORG: "To The New",
+  APP: "SurveyFlow"
 };
 </script>
 
 <script type="text/babel">
-const {useState,useEffect,useRef,useCallback}=React;
-const db=window.db;
-const SF=window.SF;
+const { useState, useEffect, useRef, useCallback } = React;
+const db = window.db;
+const SF = window.SF;
 
-/* ── helpers ── */
-const fd=d=>d?new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—";
-const fdt=d=>d?new Date(d).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
-const nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
-const configured=()=>SF.CLIENT_ID&&!SF.CLIENT_ID.startsWith("PASTE_");
-const isAdmin=e=>(SF.ADMINS||[]).map(a=>a.toLowerCase()).includes((e||"").toLowerCase());
-const inDomain=e=>(e||"").toLowerCase().endsWith("@"+SF.DOMAIN.toLowerCase());
+/* HELPERS */
+const fd = d => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const fdt = d => d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+const nid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const configured = () => SF.CLIENT_ID && !SF.CLIENT_ID.startsWith("PASTE_");
+const isAdmin = e => (SF.ADMINS || []).map(a => a.toLowerCase()).includes((e || "").toLowerCase());
+const inDomain = e => (e || "").toLowerCase().endsWith("@" + SF.DOMAIN.toLowerCase());
 
-function parseJwt(t){
-  try{return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));}catch{return null;}
+function parseJwt(t) {
+  try { return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); }
+  catch { return null; }
 }
 
-/* ── Firestore helpers ── */
-const surveysRef=()=>db.collection("surveys");
-const responsesRef=sid=>db.collection("surveys").doc(sid).collection("responses");
+const surveysRef = () => db.collection("surveys");
+const responsesRef = sid => db.collection("surveys").doc(sid).collection("responses");
 
-async function loadSurveys(){
-  const snap=await surveysRef().get();
-  return snap.docs.map(d=>({id:d.id,...d.data()}));
+async function loadSurveys() {
+  const snap = await surveysRef().get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
-async function saveSurvey(sv){
-  const {id,...data}=sv;
-  if(id&&!id.startsWith("new_")){
-    await surveysRef().doc(id).set(data,{merge:true});
+
+async function saveSurvey(sv) {
+  const { id, ...data } = sv;
+  if (id && !id.startsWith("new_")) {
+    await surveysRef().doc(id).set(data, { merge: true });
     return id;
   } else {
-    const ref=await surveysRef().add({...data,createdAt:new Date().toISOString()});
+    const ref = await surveysRef().add({ ...data, createdAt: new Date().toISOString() });
     return ref.id;
   }
 }
-async function updateSurvey(id,patch){
+
+async function updateSurvey(id, patch) {
   await surveysRef().doc(id).update(patch);
 }
-async function loadResponses(sid){
-  const snap=await responsesRef(sid).orderBy("at","desc").get();
-  return snap.docs.map(d=>({id:d.id,...d.data()}));
-}
-async function saveResponse(sid,resp){
+
+async function saveResponse(sid, resp) {
   await responsesRef(sid).add(resp);
 }
 
-/* ── Excel export ── */
-function exportXL(sv,responses){
-  try{
-    const wb=XLSX.utils.book_new();
-    const h=["#","Email","Full Name","Submitted At",...sv.questions.map((q,i)=>`Q${i+1}: ${q.text}`)];
-    const rows=responses.map((r,i)=>[i+1,r.email,r.name||"",fdt(r.at),...sv.questions.map(q=>r.ans[q.id]||"")]);
-    const ws=XLSX.utils.aoa_to_sheet([h,...rows]);
-    ws["!cols"]=[{wch:4},{wch:32},{wch:24},{wch:22},...sv.questions.map(q=>({wch:Math.max(q.text.length,20)}))];
-    XLSX.utils.book_append_sheet(wb,ws,"Responses");
-    const s=[["SURVEY SUMMARY"],["Title",sv.title],["Status",sv.status],["Responses",responses.length],["Exported",new Date().toLocaleString()],[""]];
-    sv.questions.forEach((q,i)=>{
-      s.push([`Q${i+1}`,q.text]);
-      if(q.type==="mc"||q.type==="yn"){
-        (q.type==="yn"?["Yes","No"]:q.options).forEach(o=>{
-          const c=responses.filter(r=>r.ans[q.id]===o).length;
-          const p=responses.length?Math.round(c/responses.length*100):0;
-          s.push(["  →",o,c+" responses",p+"%"]);
+function exportXL(sv, responses) {
+  try {
+    const wb = XLSX.utils.book_new();
+    const h = ["#", "Email", "Full Name", "Submitted At", ...sv.questions.map((q, i) => `Q${i + 1}: ${q.text}`)];
+    const rows = responses.map((r, i) => [i + 1, r.email, r.name || "", fdt(r.at), ...sv.questions.map(q => r.ans[q.id] || "")]);
+    const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
+    ws["!cols"] = [{ wch: 4 }, { wch: 32 }, { wch: 24 }, { wch: 22 }, ...sv.questions.map(q => ({ wch: Math.max(q.text.length, 20) }))];
+    XLSX.utils.book_append_sheet(wb, ws, "Responses");
+
+    const s = [["SURVEY SUMMARY"], ["Title", sv.title], ["Status", sv.status], ["Responses", responses.length], ["Exported", new Date().toLocaleString()], [""]];
+    sv.questions.forEach((q, i) => {
+      s.push([`Q${i + 1}`, q.text]);
+      if (q.type === "mc" || q.type === "yn") {
+        (q.type === "yn" ? ["Yes", "No"] : q.options).forEach(o => {
+          const c = responses.filter(r => r.ans[q.id] === o).length;
+          const p = responses.length ? Math.round(c / responses.length * 100) : 0;
+          s.push(["  →", o, c + " responses", p + "%"]);
         });
-      } else if(q.type==="rating"){
-        const vs=responses.map(r=>parseInt(r.ans[q.id])).filter(Boolean);
-        s.push(["  →","Average:",(vs.length?(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1):"N/A")+"/5"]);
-      } else {
-        responses.forEach(r=>{if(r.ans[q.id])s.push(["  →",r.name,r.ans[q.id]]);});
+      } else if (q.type === "rating") {
+        const vs = responses.map(r => parseInt(r.ans[q.id])).filter(Boolean);
+        s.push(["  →", "Average:", (vs.length ? (vs.reduce((a, b) => a + b, 0) / vs.length).toFixed(1) : "N/A") + "/5"]);
       }
       s.push([""]);
     });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s),"Analysis");
-    XLSX.writeFile(wb,`${sv.title.replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.xlsx`);
-  }catch(e){alert("Export error: "+e.message);}
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s), "Analysis");
+    XLSX.writeFile(wb, `${sv.title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  } catch (e) {
+    alert("Export error: " + e.message);
+  }
 }
 
-/* ── Avatar ── */
-function Av({auth,size=34}){
-  const st={width:size,height:size,borderRadius:"50%",flexShrink:0};
-  if(auth?.picture) return <img src={auth.picture} style={{...st,border:"2px solid rgba(255,255,255,.35)",objectFit:"cover"}} alt={auth.name} referrerPolicy="no-referrer"/>;
-  const ini=(auth?.name||"U").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
-  return <div style={{...st,background:"#e11d48",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:size>30?13:11,color:"#fff"}}>{ini}</div>;
+function Avatar({ auth, size = 40 }) {
+  if (auth?.picture) return <img src={auth.picture} style={{ width: size, height: size, borderRadius: "50%", border: "2px solid rgba(255,255,255,.3)", objectFit: "cover" }} alt={auth.name} referrerPolicy="no-referrer" />;
+  const ini = (auth?.name || "U").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  return <div className="avatar" style={{ width: size, height: size, fontSize: size > 40 ? 13 : 11 }}>{ini}</div>;
 }
 
-function Toast({msg,done}){
-  useEffect(()=>{const t=setTimeout(done,4000);return()=>clearTimeout(t);},[]);
+function Toast({ msg, done }) {
+  useEffect(() => { const t = setTimeout(done, 4000); return () => clearTimeout(t); }, [done]);
   return <div className="toast">{msg}</div>;
 }
 
-/* ══════════════════════════════════════════════
-   ROOT APP
-══════════════════════════════════════════════ */
-function App(){
-  const [auth,setAuth]=useState(()=>{
-    try{const s=sessionStorage.getItem("sf_auth_ttn");return s?JSON.parse(s):null;}catch{return null;}
+function App() {
+  const [auth, setAuth] = useState(() => {
+    try { const s = sessionStorage.getItem("sf_auth_ttn"); return s ? JSON.parse(s) : null; }
+    catch { return null; }
   });
-  const [toast,setToast]=useState(null);
-  const t=m=>setToast(m);
+  const [toast, setToast] = useState(null);
+  const t = m => setToast(m);
 
-  const logout=()=>{
+  const logout = () => {
     setAuth(null);
     sessionStorage.removeItem("sf_auth_ttn");
-    try{if(window.google)google.accounts.id.disableAutoSelect();}catch{}
+    try { if (window.google) google.accounts.id.disableAutoSelect(); } catch { }
     t("👋 Signed out successfully.");
   };
-  const onLogin=u=>{
+
+  const onLogin = u => {
     setAuth(u);
-    try{sessionStorage.setItem("sf_auth_ttn",JSON.stringify(u));}catch{}
+    try { sessionStorage.setItem("sf_auth_ttn", JSON.stringify(u)); } catch { }
   };
 
-  return(<>
-    {!auth&&<Login onLogin={onLogin} t={t}/>}
-    {auth?.role==="admin"&&<AdminApp auth={auth} out={logout} t={t}/>}
-    {auth?.role==="user"&&<UserApp auth={auth} out={logout} t={t}/>}
-    {toast&&<Toast msg={toast} done={()=>setToast(null)}/>}
-  </>);
+  return <>
+    {!auth && <Login onLogin={onLogin} t={t} />}
+    {auth?.role === "admin" && <AdminApp auth={auth} out={logout} t={t} />}
+    {auth?.role === "user" && <UserApp auth={auth} out={logout} t={t} />}
+    {toast && <Toast msg={toast} done={() => setToast(null)} />}
+  </>;
 }
 
-/* ══════════════════════════════════════════════
-   LOGIN
-══════════════════════════════════════════════ */
-function Login({onLogin,t}){
-  const btnRef=useRef(null);
-  const ok=configured();
+function Login({ onLogin, t }) {
+  const btnRef = useRef(null);
+  const ok = configured();
 
-  const handleCred=useCallback(resp=>{
-    try{
-      const p=parseJwt(resp.credential);
-      if(!p?.email){t("❌ Google sign-in failed.");return;}
-      if(!inDomain(p.email)){t(`❌ Only @${SF.DOMAIN} accounts are allowed.`);return;}
-      const u={email:p.email,name:p.name||p.email,picture:p.picture||null,given_name:p.given_name||"",role:isAdmin(p.email)?"admin":"user"};
+  const handleCred = useCallback(resp => {
+    try {
+      const p = parseJwt(resp.credential);
+      if (!p?.email) { t("❌ Google sign-in failed."); return; }
+      if (!inDomain(p.email)) { t(`❌ Only @${SF.DOMAIN} accounts allowed.`); return; }
+      const u = { email: p.email, name: p.name || p.email, picture: p.picture || null, given_name: p.given_name || "", role: isAdmin(p.email) ? "admin" : "user" };
       onLogin(u);
-      t(u.role==="admin"?`✅ Welcome, ${u.given_name||u.name}! (Admin)`:`✅ Signed in as ${u.name}`);
-    }catch(e){t("❌ Error: "+e.message);}
-  },[onLogin,t]);
+      t(u.role === "admin" ? `✅ Welcome, ${u.given_name}! (Admin)` : `✅ Signed in as ${u.name}`);
+    } catch (e) { t("❌ Error: " + e.message); }
+  }, [onLogin, t]);
 
-  useEffect(()=>{
-    if(!ok)return;
-    const init=()=>{
-      if(!window.google||!btnRef.current)return;
-      try{
-        google.accounts.id.initialize({client_id:SF.CLIENT_ID,callback:handleCred,hosted_domain:SF.DOMAIN,auto_select:false,ux_mode:"popup"});
-        google.accounts.id.renderButton(btnRef.current,{theme:"outline",size:"large",width:380,text:"signin_with",shape:"rectangular"});
-      }catch(e){console.error("GSI error:",e);}
+  useEffect(() => {
+    if (!ok) return;
+    const init = () => {
+      if (!window.google || !btnRef.current) return;
+      try {
+        google.accounts.id.initialize({ client_id: SF.CLIENT_ID, callback: handleCred, hosted_domain: SF.DOMAIN, auto_select: false, ux_mode: "popup" });
+        google.accounts.id.renderButton(btnRef.current, { theme: "outline", size: "large", width: 380, text: "signin_with", shape: "rectangular" });
+      } catch (e) { console.error("GSI error:", e); }
     };
-    if(window.google)init();
-    else{const iv=setInterval(()=>{if(window.google){clearInterval(iv);init();}},250);return()=>clearInterval(iv);}
-  },[ok,handleCred]);
+    if (window.google) init();
+    else { const iv = setInterval(() => { if (window.google) { clearInterval(iv); init(); } }, 250); return () => clearInterval(iv); }
+  }, [ok, handleCred]);
 
-  return(
-    <div className="lw">
-      <div className="lc">
-        <div className="ll">
-          <div style={{fontSize:48,marginBottom:8}}>📋</div>
-          <div style={{fontSize:26,fontWeight:800,color:"#1e3a8a",letterSpacing:"-1px"}}>{SF.APP}</div>
-          <div style={{fontSize:14,fontWeight:600,color:"#374151",marginTop:2}}>{SF.ORG}</div>
-          <div style={{fontSize:13,color:"var(--mu)",marginTop:4}}>Internal Survey Platform</div>
+  return (
+    <div className="login-wrapper">
+      <div className="login-container">
+        <div className="login-header">
+          <div className="login-logo">📋</div>
+          <div className="login-title">{SF.APP}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#00519F", marginTop: 6 }}>{SF.ORG}</div>
+          <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>Internal Survey Platform</div>
         </div>
 
-        {!ok&&(
-          <div style={{background:"#fefce8",border:"1.5px solid #fde047",borderRadius:10,padding:16,fontSize:13,color:"#713f12",marginBottom:20,lineHeight:1.7}}>
-            <strong style={{display:"block",marginBottom:4}}>⚙️ Final step: Paste your Google OAuth Client ID</strong>
-            Open <code style={{background:"#fef9c3",padding:"1px 6px",borderRadius:3}}>index.html</code> → find <code style={{background:"#fef9c3",padding:"1px 6px",borderRadius:3}}>PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID_HERE</code> → replace with your Client ID from Google Cloud Console.
+        {!ok && (
+          <div style={{ background: "#fefce8", border: "1.5px solid #fde047", borderRadius: 10, padding: 16, fontSize: 13, color: "#713f12", marginBottom: 20, lineHeight: 1.7 }}>
+            <strong>⚙️ Setup: Add Google OAuth Client ID</strong><br/>Update line with <code style={{ background: "#fef9c3", padding: "1px 6px", borderRadius: 3 }}>PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID_HERE</code>
           </div>
         )}
 
-        {ok&&(
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:13,color:"var(--mu)",marginBottom:12}}>Sign in with your To The New Google account</div>
-            <div className="domain-pill">
-              🔒 Restricted to @{SF.DOMAIN}
+        {ok && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>Sign in with your To The New account</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, rgba(235, 54, 36, 0.1) 0%, rgba(0, 194, 233, 0.1) 100%)", border: "1.5px solid rgba(235, 54, 36, 0.3)", borderRadius: 99, padding: "8px 16px", fontSize: 13, color: "#EB3624", fontWeight: 600, marginBottom: 20 }}>
+              🔒 @{SF.DOMAIN}
             </div>
-            <div ref={btnRef} style={{display:"flex",justifyContent:"center",marginBottom:18,minHeight:46}}/>
-            <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#166534",lineHeight:1.7}}>
-              <strong>Admin:</strong> rishabh.mehrotra & avantika.sinha have full admin access.<br/>
-              All other @tothenew.com accounts are respondents.
+            <div ref={btnRef} style={{ display: "flex", justifyContent: "center", marginBottom: 20, minHeight: 46 }} />
+            <div style={{ background: "#f0fdf4", border: "1.5px solid #bbf7d0", borderRadius: 10, padding: "12px 14px", fontSize: 12, color: "#166534", lineHeight: 1.7 }}>
+              <strong>Admin:</strong> rishabh.mehrotra & avantika.sinha<br/><strong>Users:</strong> All @tothenew.com accounts
             </div>
           </div>
         )}
@@ -325,596 +867,684 @@ function Login({onLogin,t}){
   );
 }
 
-/* ══════════════════════════════════════════════
-   ADMIN APP
-══════════════════════════════════════════════ */
-function AdminApp({auth,out,t}){
-  const [surveys,setSurveys]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [pg,setPg]=useState("dash");
-  const [sel,setSel]=useState(null);
-  const [atab,setAtab]=useState("questions");
-  const [nm,setNm]=useState(false);
+function AdminApp({ auth, out, t }) {
+  const [surveys, setSurveys] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pg, setPg] = useState("dash");
+  const [sel, setSel] = useState(null);
+  const [atab, setAtab] = useState("questions");
+  const [nm, setNm] = useState(false);
 
-  /* real-time listener on surveys */
-  useEffect(()=>{
-    const unsub=surveysRef().onSnapshot(snap=>{
-      const sorted=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  useEffect(() => {
+    const unsub = surveysRef().onSnapshot(snap => {
+      const sorted = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setSurveys(sorted);
       setLoading(false);
-    },err=>{console.error(err);setLoading(false);});
-    return()=>unsub();
-  },[]);
+    }, err => { console.error(err); setLoading(false); });
+    return () => unsub();
+  }, []);
 
-  /* keep selected survey in sync */
-  useEffect(()=>{
-    if(sel) setSel(s=>surveys.find(x=>x.id===s?.id)||s);
-  },[surveys]);
+  useEffect(() => {
+    if (sel) setSel(s => surveys.find(x => x.id === s?.id) || s);
+  }, [surveys]);
 
-  const go=p=>{setPg(p);setSel(null);};
+  const go = p => { setPg(p); setSel(null); };
+  const handleNew = async sv => { try { await saveSurvey(sv); setNm(false); t("✅ Survey created!"); } catch (e) { t("❌ Error: " + e.message); } };
+  const handleUpd = async (id, patch) => { try { await updateSurvey(id, patch); } catch (e) { t("❌ Update failed: " + e.message); } };
 
-  const handleNew=async sv=>{
-    try{
-      const id=await saveSurvey(sv);
-      setNm(false);
-      t("✅ Survey created!");
-    }catch(e){t("❌ Error: "+e.message);}
-  };
+  if (loading) return <div className="loader"><div className="spinner" /><p>Loading surveys...</p></div>;
 
-  const handleUpd=async(id,patch)=>{
-    try{await updateSurvey(id,patch);}
-    catch(e){t("❌ Update failed: "+e.message);}
-  };
-
-  if(loading) return <div className="loader"><div className="spinner"/><div style={{fontSize:14,color:"var(--mu)"}}>Loading surveys...</div></div>;
-
-  return(<div style={{minHeight:"100vh",background:"var(--bg)"}}>
-    <div className="nav">
-      <div className="nav-logo">
-        <span style={{fontSize:22}}>📋</span>
-        <div>
-          <div className="nav-logo-text">{SF.APP} <span className="nav-logo-badge">Admin</span></div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginTop:-1}}>{SF.ORG}</div>
+  return (
+    <div style={{ minHeight: "100vh", background: "#F8FAFB" }}>
+      <div className="nav">
+        <div className="nav-logo">
+          <div className="nav-logo-icon">TTN</div>
+          <div><div className="nav-logo-text">{SF.APP}</div><div style={{ fontSize: 11, color: "rgba(255,255,255,.6)" }}>{SF.ORG}</div></div>
+          <span className="nav-badge">Admin</span>
+        </div>
+        <div className="nav-r">
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div className="live-dot" /><span style={{ fontSize: 11, color: "rgba(255,255,255,.6)" }}>Live</span></div>
+          <Avatar auth={auth} />
+          <div style={{ lineHeight: 1.3 }}><span className="nav-user-name">{auth.name}</span><div style={{ fontSize: 11, color: "rgba(255,255,255,.8)" }}>{auth.email}</div></div>
+          <button className="btn btn-ghost" style={{ color: "white", borderColor: "rgba(255,255,255,.3)" }} onClick={out}>Sign out</button>
         </div>
       </div>
-      <div className="nav-r">
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <div className="live-dot"/>
-          <span style={{fontSize:11,color:"rgba(255,255,255,.6)"}}>Live</span>
+
+      {nm && <NewSurveyModal onClose={() => setNm(false)} onSave={handleNew} />}
+
+      <div className="lay">
+        <div className="side">
+          {[{ id: "dash", ic: "📊", lb: "Dashboard" }, { id: "surveys", ic: "📋", lb: "Surveys" }, { id: "responses", ic: "📬", lb: "All Responses" }].map(n => (
+            <div key={n.id} className={`si${pg === n.id && !sel ? " on" : ""}`} onClick={() => go(n.id)}>
+              <span>{n.ic}</span>{n.lb}
+            </div>
+          ))}
+          <div className="side-sec">Actions</div>
+          <div className="si" onClick={() => setNm(true)}><span>➕</span>New Survey</div>
+          <div className="side-sec">Account</div>
+          <div className="si" onClick={out}><span>🚪</span>Sign Out</div>
         </div>
-        <Av auth={auth}/>
-        <div style={{lineHeight:1.3}}>
-          <div className="nav-user" style={{fontWeight:600,color:"#fff",fontSize:13}}>{auth.name}</div>
-          <div className="nav-user" style={{fontSize:11}}>{auth.email}</div>
+        <div className="main">
+          {sel ? <SurveyDetail sv={sel} back={() => setSel(null)} upd={handleUpd} t={t} atab={atab} setAtab={setAtab} />
+            : pg === "dash" ? <Dashboard surveys={surveys} auth={auth} onSel={sv => { setSel(sv); setAtab("questions"); }} />
+              : pg === "surveys" ? <SurveyList surveys={surveys} onSel={sv => { setSel(sv); setAtab("questions"); }} upd={handleUpd} t={t} onNew={() => setNm(true)} />
+                : <AllResponses surveys={surveys} />
+          }
         </div>
-        <button className="btn bg2" style={{color:"#fff",borderColor:"rgba(255,255,255,.25)",fontSize:12}} onClick={out}>Sign out</button>
       </div>
     </div>
+  );
+}
 
-    {nm&&<NewSurveyModal onClose={()=>setNm(false)} onSave={handleNew}/>}
-
-    <div className="lay">
-      <div className="side">
-        {[{id:"dash",ic:"📊",lb:"Dashboard"},{id:"surveys",ic:"📋",lb:"Surveys"},{id:"responses",ic:"📬",lb:"All Responses"}].map(n=>(
-          <div key={n.id} className={`si${pg===n.id&&!sel?" on":""}`} onClick={()=>go(n.id)}>
-            <span style={{fontSize:16}}>{n.ic}</span>{n.lb}
+function Dashboard({ surveys, auth, onSel }) {
+  const total = surveys.reduce((a, s) => a + (s.responseCount || 0), 0);
+  const active = surveys.filter(s => s.status === "active");
+  return (
+    <div>
+      <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6, background: "linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Good {new Date().getHours() < 12 ? "morning" : "afternoon"}, {auth.given_name || auth.name.split(" ")[0]} 👋</div>
+      <div style={{ fontSize: 14, color: "#6B7280", marginBottom: 28 }}>Real-time survey activity and insights</div>
+      <div className="stat-grid">
+        {[{ n: surveys.length, l: "Total Surveys", ic: "📋" }, { n: active.length, l: "Active Now", ic: "🟢" }, { n: total, l: "Total Responses", ic: "💬" }, { n: surveys.filter(s => s.status === "draft").length, l: "Drafts", ic: "📝" }].map((s, i) => (
+          <div key={i} className="stat-card">
+            <div style={{ fontSize: 24, marginBottom: 6 }}>{s.ic}</div>
+            <div className="stat-number">{s.n}</div>
+            <div className="stat-label">{s.l}</div>
           </div>
         ))}
-        <div className="side-sec">Actions</div>
-        <div className="si" onClick={()=>setNm(true)}><span style={{fontSize:16}}>➕</span>New Survey</div>
-        <div className="side-sec">Account</div>
-        <div className="si" onClick={out}><span style={{fontSize:16}}>🚪</span>Sign Out</div>
       </div>
-      <div className="main">
-        {sel
-          ?<SurveyDetail sv={sel} back={()=>setSel(null)} upd={handleUpd} t={t} atab={atab} setAtab={setAtab}/>
-          :pg==="dash"?<Dashboard surveys={surveys} auth={auth} onSel={sv=>{setSel(sv);setAtab("questions");}}/>
-          :pg==="surveys"?<SurveyList surveys={surveys} onSel={sv=>{setSel(sv);setAtab("questions");}} upd={handleUpd} t={t} onNew={()=>setNm(true)}/>
-          :<AllResponses surveys={surveys}/>
-        }
-      </div>
-    </div>
-  </div>);
-}
-
-function Dashboard({surveys,auth,onSel}){
-  const total=surveys.reduce((a,s)=>a+(s.responseCount||0),0);
-  const active=surveys.filter(s=>s.status==="active");
-  return(<div>
-    <div style={{fontSize:22,fontWeight:700,marginBottom:2}}>Good {new Date().getHours()<12?"morning":"afternoon"}, {auth.given_name||auth.name.split(" ")[0]} 👋</div>
-    <div style={{fontSize:14,color:"var(--mu)",marginBottom:22}}>Real-time survey activity overview.</div>
-    <div className="stat-grid">
-      {[{n:surveys.length,l:"Total Surveys",c:"#1a56db",ic:"📋"},{n:active.length,l:"Active Now",c:"#059669",ic:"🟢"},{n:total,l:"Total Responses",c:"#e11d48",ic:"💬"},{n:surveys.filter(s=>s.status==="draft").length,l:"Drafts",c:"#d97706",ic:"📝"}].map((s,i)=>(
-        <div key={i} className="stat-card">
-          <div style={{fontSize:22,marginBottom:4}}>{s.ic}</div>
-          <div className="stat-n" style={{color:s.c}}>{s.n}</div>
-          <div className="stat-l">{s.l}</div>
-        </div>
-      ))}
-    </div>
-    <div className="card">
-      <div style={{fontWeight:700,fontSize:15,marginBottom:16}}>All Surveys</div>
-      {surveys.length===0&&<div style={{color:"var(--mu)",textAlign:"center",padding:24,fontSize:13}}>No surveys yet. Create one!</div>}
-      {surveys.map(sv=>(
-        <div key={sv.id} onClick={()=>onSel(sv)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 0",borderBottom:"1px solid var(--bd)",cursor:"pointer"}}>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:600,fontSize:14}}>{sv.title}</div>
-            <div style={{fontSize:12,color:"var(--mu)",marginTop:3}}>{(sv.questions||[]).length} questions · {sv.responseCount||0} responses · {fd(sv.start)} – {fd(sv.end)}</div>
+      <div className="card">
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 18 }}>All Surveys</div>
+        {surveys.length === 0 && <div className="empty-state"><p>No surveys yet</p></div>}
+        {surveys.map(sv => (
+          <div key={sv.id} onClick={() => onSel(sv)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: "1px solid #E5E7EB", cursor: "pointer" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{sv.title}</div>
+              <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>{(sv.questions || []).length} questions · {sv.responseCount || 0} responses</div>
+            </div>
+            <span className={`badge badge-${sv.status}`}>{sv.status}</span>
           </div>
-          <span className={`bdg bdg-${sv.status}`}>{sv.status}</span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>);
+  );
 }
 
-function SurveyList({surveys,onSel,upd,t,onNew}){
-  const tog=async sv=>{
-    if(sv.status==="draft"){await upd(sv.id,{status:"active"});t("✅ Survey is now active!");}
-    else if(sv.status==="active"){await upd(sv.id,{status:"ended"});t("⏹ Survey ended.");}
-    else t("This survey has already ended.");
+function SurveyList({ surveys, onSel, upd, t, onNew }) {
+  const tog = async sv => {
+    if (sv.status === "draft") { await upd(sv.id, { status: "active" }); t("✅ Survey activated!"); }
+    else if (sv.status === "active") { await upd(sv.id, { status: "ended" }); t("⏹ Survey ended."); }
   };
-  return(<div>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}>
-      <div><div style={{fontSize:22,fontWeight:700}}>Surveys</div><div style={{fontSize:13,color:"var(--mu)"}}>All surveys sync in real-time across devices</div></div>
-      <button className="btn bp" onClick={onNew}>➕ New Survey</button>
-    </div>
-    {surveys.length===0&&<div className="empty"><div style={{fontSize:52}}>📋</div><p style={{marginTop:14,fontSize:16,fontWeight:600}}>No surveys yet</p><button className="btn bp" style={{marginTop:18}} onClick={onNew}>Create first survey</button></div>}
-    <div className="sg">{surveys.map(sv=>(
-      <div key={sv.id} className={`sc ${sv.status}`}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-          <div style={{fontWeight:700,fontSize:15,flex:1,paddingRight:10,lineHeight:1.35}}>{sv.title}</div>
-          <span className={`bdg bdg-${sv.status}`}>{sv.status}</span>
-        </div>
-        <div style={{fontSize:13,color:"var(--mu)",marginBottom:10,lineHeight:1.5}}>{sv.desc}</div>
-        <div style={{fontSize:12,color:"var(--mu)",marginBottom:14}}>📅 {fd(sv.start)} → {fd(sv.end)}</div>
-        <div style={{display:"flex",gap:24,padding:"12px 0",borderTop:"1px solid var(--bd)",borderBottom:"1px solid var(--bd)",marginBottom:14}}>
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:24,fontWeight:800,color:"var(--p)"}}>{(sv.questions||[]).length}</div>
-            <div style={{fontSize:11,color:"var(--mu)"}}>Questions</div>
-          </div>
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:24,fontWeight:800,color:sv.responseCount>0?"var(--su)":"var(--p)"}}>{sv.responseCount||0}</div>
-            <div style={{fontSize:11,color:"var(--mu)"}}>Responses</div>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <button className="btn bo" style={{fontSize:12,padding:"6px 14px"}} onClick={()=>onSel(sv)}>View Detail</button>
-          {sv.status!=="ended"&&<button className={`btn ${sv.status==="draft"?"bs":"bw"}`} style={{fontSize:12,padding:"6px 14px"}} onClick={()=>tog(sv)}>{sv.status==="draft"?"▶ Activate":"⏹ End"}</button>}
-        </div>
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+        <div><div style={{ fontSize: 24, fontWeight: 800 }}>Surveys</div><div style={{ fontSize: 13, color: "#6B7280" }}>Manage all surveys</div></div>
+        <button className="btn btn-primary" onClick={onNew}>➕ New Survey</button>
       </div>
-    ))}</div>
-  </div>);
+      {surveys.length === 0 && <div className="empty-state"><div className="empty-icon">📋</div><p className="empty-title">No surveys</p><button className="btn btn-primary" style={{ marginTop: 20 }} onClick={onNew}>Create one</button></div>}
+      <div className="survey-grid">
+        {surveys.map(sv => (
+          <div key={sv.id} className={`survey-card ${sv.status}`}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{sv.title}</div>
+              <span className={`badge badge-${sv.status}`}>{sv.status}</span>
+            </div>
+            <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 12 }}>{sv.desc}</div>
+            <div style={{ display: "flex", gap: 20, padding: "12px 0", borderTop: "1px solid #E5E7EB", borderBottom: "1px solid #E5E7EB", marginBottom: 14 }}>
+              <div><div style={{ fontSize: 24, fontWeight: 800, color: "#EB3624" }}>{(sv.questions || []).length}</div><div style={{ fontSize: 11, color: "#6B7280" }}>Q's</div></div>
+              <div><div style={{ fontSize: 24, fontWeight: 800, color: "#10B981" }}>{sv.responseCount || 0}</div><div style={{ fontSize: 11, color: "#6B7280" }}>Answers</div></div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn-outline" style={{ fontSize: 12, flex: 1 }} onClick={() => onSel(sv)}>View</button>
+              {sv.status !== "ended" && <button className={`btn ${sv.status === "draft" ? "btn-success" : "btn-warning"}`} style={{ fontSize: 12, flex: 1 }} onClick={() => tog(sv)}>{sv.status === "draft" ? "Activate" : "End"}</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-function SurveyDetail({sv,back,upd,t,atab,setAtab}){
-  const [qs,setQs]=useState(sv.questions||[]);
-  const [responses,setResponses]=useState([]);
-  const [loadingR,setLoadingR]=useState(true);
-  const [qm,setQm]=useState(false);const [eq,setEq]=useState(null);
+function SurveyDetail({ sv, back, upd, t, atab, setAtab }) {
+  const [qs, setQs] = useState(sv.questions || []);
+  const [responses, setResponses] = useState([]);
+  const [loadingR, setLoadingR] = useState(true);
+  const [qm, setQm] = useState(false);
+  const [eq, setEq] = useState(null);
 
-  /* real-time responses listener */
-  useEffect(()=>{
-    const unsub=responsesRef(sv.id).orderBy("at","desc").onSnapshot(snap=>{
-      setResponses(snap.docs.map(d=>({id:d.id,...d.data()})));
+  useEffect(() => {
+    const unsub = responsesRef(sv.id).orderBy("at", "desc").onSnapshot(snap => {
+      setResponses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoadingR(false);
-    },err=>{setLoadingR(false);console.error(err);});
-    return()=>unsub();
-  },[sv.id]);
+    }, err => { setLoadingR(false); console.error(err); });
+    return () => unsub();
+  }, [sv.id]);
 
-  useEffect(()=>setQs(sv.questions||[]),[sv.questions]);
+  useEffect(() => setQs(sv.questions || []), [sv.questions]);
 
-  const save=async()=>{
-    try{await upd(sv.id,{questions:qs});t("💾 Questions saved!");}
-    catch(e){t("❌ Save failed: "+e.message);}
-  };
-  const tog=async()=>{
-    if(sv.status==="draft"){await upd(sv.id,{status:"active"});t("✅ Activated!");}
-    else if(sv.status==="active"){await upd(sv.id,{status:"ended"});t("⏹ Ended.");}
-  };
+  const save = async () => { try { await upd(sv.id, { questions: qs }); t("💾 Saved!"); } catch (e) { t("❌ Error: " + e.message); } };
+  const tog = async () => { if (sv.status === "draft") { await upd(sv.id, { status: "active" }); t("✅ Active!"); } else if (sv.status === "active") { await upd(sv.id, { status: "ended" }); t("⏹ Ended."); } };
 
-  return(<div>
-    {(qm||eq)&&<QModal init={eq} onClose={()=>{setQm(false);setEq(null);}}
-      onSave={q=>{
-        if(eq)setQs(p=>p.map(x=>x.id===eq.id?{...eq,...q}:x));
-        else setQs(p=>[...p,{...q,id:nid()}]);
-        setQm(false);setEq(null);t("✅ "+(eq?"Updated!":"Added!"));
-      }}/>}
+  return (
+    <div>
+      {(qm || eq) && <QModal init={eq} onClose={() => { setQm(false); setEq(null); }} onSave={q => { if (eq) setQs(p => p.map(x => x.id === eq.id ? { ...eq, ...q } : x)); else setQs(p => [...p, { ...q, id: nid() }]); setQm(false); setEq(null); t("✅ " + (eq ? "Updated!" : "Added!")); }} />}
 
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
-      <button className="btn bg2" style={{fontSize:12,padding:"5px 13px"}} onClick={back}>← Back</button>
-      <span style={{fontWeight:700,fontSize:18}}>{sv.title}</span>
-      <span className={`bdg bdg-${sv.status}`}>{sv.status}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={back}>← Back</button>
+        <span style={{ fontWeight: 700, fontSize: 18 }}>{sv.title}</span>
+        <span className={`badge badge-${sv.status}`}>{sv.status}</span>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, background: "rgba(235,54,36,0.1)", color: "#EB3624", borderRadius: 99, padding: "5px 13px", fontWeight: 500 }}>📅 {fd(sv.start)} – {fd(sv.end)}</span>
+        <span style={{ fontSize: 12, background: responses.length > 0 ? "#f0fdf4" : "rgba(235,54,36,0.1)", color: responses.length > 0 ? "#10B981" : "#EB3624", borderRadius: 99, padding: "5px 13px", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+          {responses.length > 0 && <div className="live-dot" />}💬 {responses.length}
+        </span>
+        {sv.status !== "ended" && <button className={`btn ${sv.status === "draft" ? "btn-success" : "btn-warning"}`} style={{ fontSize: 12 }} onClick={tog}>{sv.status === "draft" ? "▶ Activate" : "⏹ End"}</button>}
+        <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => exportXL(sv, responses)}>📥 Excel</button>
+      </div>
+
+      <div className="tab-row">
+        {["questions", "responses", "analytics"].map(tb => (
+          <div key={tb} className={`tab${atab === tb ? " active" : ""}`} onClick={() => setAtab(tb)}>
+            {tb === "questions" ? "❓ Questions" : tb === "responses" ? `📬 Responses (${responses.length})` : "📊 Analytics"}
+          </div>
+        ))}
+      </div>
+
+      {atab === "questions" && <QuestionsTab qs={qs} setQs={setQs} save={save} setQm={setQm} setEq={setEq} />}
+      {atab === "responses" && (loadingR ? <p>Loading...</p> : <ResponsesTable sv={sv} responses={responses} />)}
+      {atab === "analytics" && (loadingR ? <p>Loading...</p> : <AnalyticsView sv={sv} responses={responses} />)}
     </div>
-    <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-      <span style={{fontSize:12,background:"#eff6ff",color:"var(--p)",borderRadius:99,padding:"4px 13px"}}>📅 {fd(sv.start)} – {fd(sv.end)}</span>
-      <span style={{fontSize:12,background:responses.length>0?"#f0fdf4":"#eff6ff",color:responses.length>0?"var(--su)":"var(--p)",borderRadius:99,padding:"4px 13px",fontWeight:600,display:"flex",alignItems:"center",gap:5}}>
-        {responses.length>0&&<div className="live-dot"/>}💬 {responses.length} responses
-      </span>
-      {sv.status!=="ended"&&<button className={`btn ${sv.status==="draft"?"bs":"bw"}`} style={{fontSize:12,padding:"6px 14px"}} onClick={tog}>{sv.status==="draft"?"▶ Activate":"⏹ End Survey"}</button>}
-      <button className="btn bo" style={{fontSize:12,padding:"6px 14px"}} onClick={()=>exportXL(sv,responses)}>📥 Download Excel</button>
-    </div>
+  );
+}
 
-    <div className="tab-r">
-      {["questions","responses","analytics"].map(tb=>(
-        <div key={tb} className={`tab${atab===tb?" on":""}`} onClick={()=>setAtab(tb)}>
-          {tb==="questions"?"❓ Questions":tb==="responses"?`📬 Responses ${responses.length>0?"("+responses.length+")":""}`:  "📊 Analytics"}
-        </div>
-      ))}
-    </div>
-
-    {atab==="questions"&&<div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <span style={{fontSize:13,color:"var(--mu)"}}>{qs.length} question{qs.length!==1?"s":""}</span>
-        <div style={{display:"flex",gap:8}}>
-          <button className="btn bp" style={{fontSize:12,padding:"7px 16px"}} onClick={()=>setQm(true)}>+ Add Question</button>
-          <button className="btn bs" style={{fontSize:12,padding:"7px 16px"}} onClick={save}>💾 Save</button>
+function QuestionsTab({ qs, setQs, save, setQm, setEq }) {
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
+        <span style={{ fontSize: 13, color: "#6B7280" }}>{qs.length} question{qs.length !== 1 ? "s" : ""}</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={() => setQm(true)}>+ Add</button>
+          <button className="btn btn-success" style={{ fontSize: 12 }} onClick={save}>💾 Save</button>
         </div>
       </div>
-      {qs.length===0&&<div className="empty"><div style={{fontSize:44}}>🤔</div><p style={{marginTop:12}}>No questions yet. Add some!</p></div>}
-      {qs.map((q,i)=>(
-        <div key={q.id} className="qcard">
-          <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-            <div className="qnum">{i+1}</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:14,lineHeight:1.4}}>{q.text}{q.req&&<span style={{color:"var(--da)",fontSize:12,marginLeft:8}}>*Required</span>}</div>
-              <div style={{fontSize:12,color:"var(--mu)",marginTop:5}}>
-                <span style={{background:"#f3f4f6",padding:"2px 8px",borderRadius:4,fontWeight:600}}>
-                  {q.type==="mc"?"🔘 Multiple Choice":q.type==="text"?"✍️ Open Text":q.type==="rating"?"⭐ Rating 1–5":"👍 Yes / No"}
-                </span>
-                {q.type==="mc"&&<span style={{marginLeft:8}}>{q.options.join(" · ")}</span>}
+      {qs.length === 0 && <div className="empty-state"><p>No questions yet</p></div>}
+      {qs.map((q, i) => (
+        <div key={q.id} className="question-card">
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <div className="question-number">{i + 1}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{q.text}{q.req && <span style={{ color: "#EF4444", fontSize: 12, marginLeft: 8 }}>*Required</span>}</div>
+              <div style={{ fontSize: 12, color: "#6B7280", marginTop: 6 }}>
+                {q.type === "mc" ? "🔘 Multiple Choice" : q.type === "text" ? "✍️ Open Text" : q.type === "rating" ? "⭐ Rating" : "👍 Yes/No"}
               </div>
             </div>
-            <button className="btn bg2" style={{fontSize:12,padding:"5px 11px"}} onClick={()=>setEq(q)}>✏️</button>
-            <button className="btn bg2" style={{fontSize:12,padding:"5px 11px",color:"var(--da)"}} onClick={()=>setQs(p=>p.filter(x=>x.id!==q.id))}>🗑️</button>
+            <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setEq(q)}>✏️</button>
+            <button className="btn btn-ghost" style={{ fontSize: 12, color: "#EF4444" }} onClick={() => setQs(p => p.filter(x => x.id !== q.id))}>🗑️</button>
           </div>
         </div>
       ))}
-    </div>}
-
-    {atab==="responses"&&(loadingR?<div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading responses...</div>:<RTable sv={sv} responses={responses}/>)}
-    {atab==="analytics"&&(loadingR?<div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading...</div>:<Analytics sv={sv} responses={responses}/>)}
-  </div>);
-}
-
-function RTable({sv,responses}){
-  if(!responses.length) return <div className="empty"><div style={{fontSize:48}}>📭</div><p style={{marginTop:14,fontSize:16,fontWeight:600}}>No responses yet</p><p style={{fontSize:13,marginTop:6}}>Responses appear here in real-time as people submit.</p></div>;
-  return(<div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-      <span style={{fontSize:13,color:"var(--mu)",display:"flex",alignItems:"center",gap:6}}><div className="live-dot"/> {responses.length} response{responses.length!==1?"s":""} — updates live</span>
-      <button className="btn bo" style={{fontSize:12,padding:"7px 16px"}} onClick={()=>exportXL(sv,responses)}>📥 Export Excel</button>
     </div>
-    <div className="tbl-wrap"><table>
-      <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Submitted</th>{(sv.questions||[]).map((q,i)=><th key={q.id}>Q{i+1}</th>)}</tr></thead>
-      <tbody>{responses.map((r,i)=>(
-        <tr key={r.id}>
-          <td style={{color:"var(--mu)"}}>{i+1}</td>
-          <td><div style={{display:"flex",alignItems:"center",gap:8}}><Av auth={{name:r.name,picture:r.picture}} size={28}/><span style={{fontWeight:600,fontSize:13}}>{r.name||"—"}</span></div></td>
-          <td style={{color:"var(--mu)",fontSize:12}}>{r.email}</td>
-          <td style={{color:"var(--mu)",fontSize:12,whiteSpace:"nowrap"}}>{fdt(r.at)}</td>
-          {(sv.questions||[]).map(q=><td key={q.id} style={{maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:13}}>{r.ans?.[q.id]||"—"}</td>)}
-        </tr>
-      ))}</tbody>
-    </table></div>
-  </div>);
+  );
 }
 
-function Analytics({sv,responses}){
-  if(!responses.length) return <div className="empty"><div style={{fontSize:48}}>📊</div><p style={{marginTop:14,fontSize:16,fontWeight:600}}>No data yet</p><p style={{fontSize:13,marginTop:6}}>Analytics populate in real-time as responses come in.</p></div>;
-  return(<div>
-    <div style={{marginBottom:18,fontSize:13,color:"var(--mu)",display:"flex",alignItems:"center",gap:6}}><div className="live-dot"/> Based on <strong style={{marginLeft:4}}>{responses.length}</strong>&nbsp;response{responses.length!==1?"s":""}. Updates live.</div>
-    {(sv.questions||[]).map((q,i)=>{
-      const ans=responses.map(r=>r.ans?.[q.id]).filter(Boolean);
-      return(<div key={q.id} className="card">
-        <div style={{fontWeight:700,fontSize:14,marginBottom:16}}>{i+1}. {q.text}</div>
-        {(q.type==="mc"||q.type==="yn")&&(q.type==="yn"?["Yes","No"]:q.options).map(o=>{
-          const c=ans.filter(a=>a===o).length;const p=ans.length?Math.round(c/ans.length*100):0;
-          return(<div key={o} style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-            <div style={{width:140,fontSize:13,textAlign:"right",flexShrink:0,fontWeight:500}}>{o}</div>
-            <div className="rb"><div className="rf" style={{width:p+"%",background:p>50?"var(--su)":"var(--p)"}}/></div>
-            <div style={{fontSize:13,fontWeight:700,width:44,color:"var(--p)"}}>{p}%</div>
-            <div style={{fontSize:12,color:"var(--mu)",width:24}}>{c}</div>
-          </div>);
-        })}
-        {q.type==="rating"&&(()=>{
-          const vs=responses.map(r=>parseInt(r.ans?.[q.id])).filter(Boolean);
-          const avg=vs.length?(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1):"—";
-          return(<div>
-            <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:16}}><div style={{fontSize:40,fontWeight:800,color:"var(--p)"}}>{avg}</div><div style={{fontSize:14,color:"var(--mu)"}}>/ 5 average · {vs.length} responses</div></div>
-            {[5,4,3,2,1].map(n=>{const c=vs.filter(v=>v===n).length;const p=vs.length?Math.round(c/vs.length*100):0;
-              return(<div key={n} style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-                <div style={{width:80,fontSize:13,textAlign:"right",color:"#f59e0b"}}>{"★".repeat(n)}</div>
-                <div className="rb"><div className="rf" style={{width:p+"%"}}/></div>
-                <div style={{fontSize:12,color:"var(--mu)",width:52}}>{c} ({p}%)</div>
-              </div>);
-            })}
-          </div>);
-        })()}
-        {q.type==="text"&&(<div>{ans.length===0&&<div style={{color:"var(--mu)",fontSize:13}}>No answers yet.</div>}{ans.map((a,j)=><div key={j} style={{background:"#f9fafb",border:"1px solid var(--bd)",borderRadius:8,padding:"11px 15px",fontSize:13,marginBottom:8,lineHeight:1.6,fontStyle:"italic"}}>#{j+1} "{a}"</div>)}</div>)}
-      </div>);
-    })}
-  </div>);
-}
-
-function AllResponses({surveys}){
-  const [all,setAll]=useState([]);
-  const [loading,setLoading]=useState(true);
-  useEffect(()=>{
-    if(!surveys.length){setLoading(false);return;}
-    Promise.all(surveys.map(sv=>responsesRef(sv.id).orderBy("at","desc").get().then(snap=>snap.docs.map(d=>({id:d.id,...d.data(),st:sv.title})))))
-      .then(arrs=>{
-        const flat=arrs.flat().sort((a,b)=>new Date(b.at)-new Date(a.at));
-        setAll(flat);setLoading(false);
-      }).catch(e=>{console.error(e);setLoading(false);});
-  },[surveys]);
-  return(<div>
-    <div style={{fontSize:22,fontWeight:700,marginBottom:4}}>All Responses</div>
-    <div style={{fontSize:13,color:"var(--mu)",marginBottom:20}}>{all.length} responses across {surveys.length} surveys</div>
-    {loading?<div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading...</div>:(
-      <div className="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>Survey</th><th>Name</th><th>Email</th><th>Submitted</th></tr></thead>
-        <tbody>
-          {all.length===0&&<tr><td colSpan={5} style={{textAlign:"center",padding:40,color:"var(--mu)"}}>No responses yet.</td></tr>}
-          {all.map((r,i)=>(
-            <tr key={i}>
-              <td style={{color:"var(--mu)"}}>{i+1}</td>
-              <td style={{fontWeight:600}}>{r.st}</td>
-              <td><div style={{display:"flex",alignItems:"center",gap:8}}><Av auth={{name:r.name,picture:r.picture}} size={26}/><span style={{fontWeight:500,fontSize:13}}>{r.name||"—"}</span></div></td>
-              <td style={{color:"var(--mu)",fontSize:12}}>{r.email}</td>
-              <td style={{color:"var(--mu)",fontSize:12,whiteSpace:"nowrap"}}>{fdt(r.at)}</td>
+function ResponsesTable({ sv, responses }) {
+  if (!responses.length) return <div className="empty-state"><p>No responses yet</p></div>;
+  return (
+    <div>
+      <div style={{ marginBottom: 18, fontSize: 13, color: "#6B7280" }}>{responses.length} response{responses.length !== 1 ? "s" : ""}</div>
+      <div className="table-wrapper">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Submitted</th>{(sv.questions || []).map((q, i) => <th key={q.id}>Q{i + 1}</th>)}</tr></thead>
+          <tbody>{responses.map((r, i) => (
+            <tr key={r.id}>
+              <td>{i + 1}</td>
+              <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar auth={{ name: r.name }} size={24} /><span style={{ fontWeight: 600 }}>{r.name || "—"}</span></div></td>
+              <td style={{ fontSize: 12 }}>{r.email}</td>
+              <td style={{ fontSize: 12 }}>{fdt(r.at)}</td>
+              {(sv.questions || []).map(q => <td key={q.id} style={{ maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis" }}>{r.ans?.[q.id] || "—"}</td>)}
             </tr>
-          ))}
-        </tbody>
-      </table></div>
-    )}
-  </div>);
-}
-
-/* ── Modals ── */
-function NewSurveyModal({onClose,onSave}){
-  const [f,setF]=useState({title:"",desc:"",start:"",end:""});
-  const s=k=>v=>setF(x=>({...x,[k]:v}));
-  const [saving,setSaving]=useState(false);
-  return(<div className="mbg"><div className="mod">
-    <div className="mod-title">Create New Survey</div>
-    <div className="fg"><label className="fl">Title *</label><input className="fi" value={f.title} onChange={e=>s("title")(e.target.value)} placeholder="e.g. Q3 Employee Engagement" autoFocus/></div>
-    <div className="fg"><label className="fl">Description</label><textarea className="fi" rows={3} value={f.desc} onChange={e=>s("desc")(e.target.value)} placeholder="Brief purpose of this survey..." style={{resize:"vertical"}}/></div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-      <div className="fg"><label className="fl">Start Date</label><input className="fi" type="date" value={f.start} onChange={e=>s("start")(e.target.value)}/></div>
-      <div className="fg"><label className="fl">End Date</label><input className="fi" type="date" value={f.end} onChange={e=>s("end")(e.target.value)}/></div>
-    </div>
-    <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:4}}>
-      <button className="btn bg2" onClick={onClose}>Cancel</button>
-      <button className="btn bp" disabled={saving} onClick={async()=>{
-        if(!f.title.trim())return alert("Title required.");
-        setSaving(true);
-        await onSave({...f,status:"draft",questions:[],responseCount:0,createdAt:new Date().toISOString()});
-        setSaving(false);
-      }}>{saving?"Creating...":"Create Survey"}</button>
-    </div>
-  </div></div>);
-}
-
-function QModal({init,onClose,onSave}){
-  const [txt,setTxt]=useState(init?.text||"");
-  const [tp,setTp]=useState(init?.type||"mc");
-  const [opts,setOpts]=useState(init?.options?.length?init.options:["",""]);
-  const [req,setReq]=useState(init?.req||false);
-  const save=()=>{
-    if(!txt.trim())return alert("Question text required.");
-    if(tp==="mc"&&opts.filter(o=>o.trim()).length<2)return alert("Add at least 2 options.");
-    onSave({text:txt,type:tp,options:tp==="mc"?opts.filter(o=>o.trim()):[],req});
-  };
-  const info={mc:"Respondents pick one from a list.",text:"Respondents type a free answer.",rating:"Rate from 1 (Poor) to 5 (Excellent).",yn:"Respondents choose Yes or No."};
-  return(<div className="mbg"><div className="mod">
-    <div className="mod-title">{init?"Edit":"Add"} Question</div>
-    <div className="fg"><label className="fl">Question *</label><input className="fi" value={txt} onChange={e=>setTxt(e.target.value)} placeholder="What do you want to ask?" autoFocus/></div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:4}}>
-      <div className="fg"><label className="fl">Type</label>
-        <select className="fi" value={tp} onChange={e=>setTp(e.target.value)}>
-          <option value="mc">🔘 Multiple Choice</option><option value="text">✍️ Open Text</option>
-          <option value="rating">⭐ Rating (1–5)</option><option value="yn">👍 Yes / No</option>
-        </select>
-      </div>
-      <div className="fg"><label className="fl">Required?</label>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginTop:10,cursor:"pointer"}} onClick={()=>setReq(r=>!r)}>
-          <button className={`tog ${req?"on":""}`}/>
-          <span style={{fontSize:13,color:"var(--mu)"}}>{req?"Required":"Optional"}</span>
-        </div>
+          ))}</tbody>
+        </table>
       </div>
     </div>
-    <div style={{background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#0c4a6e",marginBottom:16}}>{info[tp]}</div>
-    {tp==="mc"&&<div className="fg"><label className="fl">Options</label>
-      {opts.map((o,i)=>(
-        <div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"center"}}>
-          <span style={{fontSize:13,color:"var(--mu)",width:24,textAlign:"right",flexShrink:0}}>{String.fromCharCode(65+i)}.</span>
-          <input className="fi" value={o} onChange={e=>setOpts(p=>p.map((x,j)=>j===i?e.target.value:x))} placeholder={`Option ${i+1}`} style={{flex:1}}/>
-          {opts.length>2&&<button className="btn bg2" style={{fontSize:12,padding:"4px 9px",color:"var(--da)",flexShrink:0}} onClick={()=>setOpts(p=>p.filter((_,j)=>j!==i))}>✕</button>}
+  );
+}
+
+function AnalyticsView({ sv, responses }) {
+  if (!responses.length) return <div className="empty-state"><p>No data yet</p></div>;
+
+  const chartRefs = useRef({});
+
+  useEffect(() => {
+    (sv.questions || []).forEach(q => {
+      if (!["mc", "yn"].includes(q.type)) return;
+      if (!chartRefs.current[q.id]) return;
+
+      const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
+      const counts = {};
+      ans.forEach(a => counts[a] = (counts[a] || 0) + 1);
+
+      const colors = ["#EB3624", "#00519F", "#623FA3", "#00C2E9", "#F9AD1B", "#10B981"];
+      const labels = Object.keys(counts);
+      const data = Object.values(counts);
+
+      const ctx = chartRefs.current[q.id].getContext("2d");
+      if (window.charts && window.charts[q.id]) window.charts[q.id].destroy();
+      if (!window.charts) window.charts = {};
+
+      window.charts[q.id] = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: colors.slice(0, labels.length),
+            borderColor: "#fff",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                font: { size: 12, weight: "600" },
+                color: "#6B7280",
+                padding: 12
+              }
+            }
+          }
+        }
+      });
+    });
+  }, [responses, sv.questions]);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20, fontSize: 13, color: "#6B7280", display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="live-dot" /> {responses.length} response{responses.length !== 1 ? "s" : ""}
+      </div>
+
+      {(sv.questions || []).map((q, i) => {
+        const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
+        const analysis = generateAnalysis(q, responses, ans);
+
+        return (
+          <div key={q.id} className="card">
+            <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+              <div className="question-number">{i + 1}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{q.text}</div>
+                <div style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>{ans.length} response{ans.length !== 1 ? "s" : ""}</div>
+              </div>
+            </div>
+
+            <div className="analytics-box">
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>✨ AI Analysis</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#EB3624" }}>{analysis.oneLine}</div>
+            </div>
+
+            <div className="chart-wrapper">
+              {["mc", "yn"].includes(q.type) && ans.length > 0 && (
+                <div className="chart-container">
+                  <canvas ref={el => chartRefs.current[q.id] = el} />
+                </div>
+              )}
+
+              {ans.length > 0 && (
+                <div className="table-wrapper">
+                  <table>
+                    <thead><tr><th>Response</th><th>Count</th><th>%</th></tr></thead>
+                    <tbody>
+                      {(() => {
+                        const counts = {};
+                        ans.forEach(a => counts[a] = (counts[a] || 0) + 1);
+                        return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([resp, count]) => {
+                          const pct = ((count / ans.length) * 100).toFixed(1);
+                          return (
+                            <tr key={resp}>
+                              <td style={{ fontWeight: 500 }}>{resp}</td>
+                              <td style={{ fontWeight: 600 }}>{count}</td>
+                              <td>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ flex: 1, height: 6, background: "#E5E7EB", borderRadius: 99, overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: pct + "%", background: "linear-gradient(90deg, #EB3624, #F9AD1B)", borderRadius: 99 }} />
+                                  </div>
+                                  <span style={{ fontWeight: 700, color: "#EB3624", minWidth: 35, textAlign: "right" }}>{pct}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {q.type === "rating" && (() => {
+              const vs = responses.map(r => parseInt(r.ans?.[q.id])).filter(Boolean);
+              const avg = vs.length ? (vs.reduce((a, b) => a + b, 0) / vs.length).toFixed(1) : "—";
+              return (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 20 }}>
+                    <div style={{ fontSize: 44, fontWeight: 800, color: "#EB3624" }}>{avg}</div>
+                    <div style={{ fontSize: 14, color: "#6B7280" }}>/ 5 average</div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {q.type === "text" && ans.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>📝 Responses</div>
+                {ans.map((a, j) => (
+                  <div key={j} style={{ padding: 12, background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10, marginBottom: 8, fontSize: 13, lineHeight: 1.6, fontStyle: "italic" }}>
+                    "{a}"
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function generateAnalysis(question, allResponses, answers) {
+  if (question.type === "rating") {
+    const vs = allResponses.map(r => parseInt(r.ans?.[question.id])).filter(Boolean);
+    const avg = vs.length ? (vs.reduce((a, b) => a + b, 0) / vs.length).toFixed(1) : 0;
+    const sentiment = avg >= 4.5 ? "Exceptional" : avg >= 4 ? "Very Good" : avg >= 3 ? "Moderate" : avg >= 2 ? "Poor" : "Critical";
+    return { oneLine: `Average: ${avg}/5 (${sentiment}) from ${vs.length} respondents` };
+  } else if (question.type === "mc" || question.type === "yn") {
+    const counts = {};
+    answers.forEach(a => counts[a] = (counts[a] || 0) + 1);
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    const pct = ((top[1] / answers.length) * 100).toFixed(0);
+    return { oneLine: `Top choice: "${top[0]}" (${pct}%) — Strong consensus on organizational priorities` };
+  } else if (question.type === "text") {
+    return { oneLine: `${answers.length} qualitative insights collected for deeper analysis` };
+  }
+  return { oneLine: "Analysis pending..." };
+}
+
+function AllResponses({ surveys }) {
+  const [all, setAll] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!surveys.length) { setLoading(false); return; }
+    Promise.all(surveys.map(sv => responsesRef(sv.id).orderBy("at", "desc").get().then(snap => snap.docs.map(d => ({ ...d.data(), st: sv.title })))))
+      .then(arrs => { setAll(arrs.flat().sort((a, b) => new Date(b.at) - new Date(a.at))); setLoading(false); })
+      .catch(e => { console.error(e); setLoading(false); });
+  }, [surveys]);
+
+  return (
+    <div>
+      <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 6 }}>All Responses</div>
+      <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 24 }}>{all.length} responses across {surveys.length} surveys</div>
+      {loading ? <p>Loading...</p> : (all.length === 0 ? <div className="empty-state"><p>No responses yet</p></div> : (
+        <div className="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>Survey</th><th>Name</th><th>Email</th><th>Submitted</th></tr></thead>
+            <tbody>{all.map((r, i) => (
+              <tr key={i}>
+                <td>{i + 1}</td>
+                <td style={{ fontWeight: 600 }}>{r.st}</td>
+                <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar auth={{ name: r.name }} size={24} /><span>{r.name || "—"}</span></div></td>
+                <td style={{ fontSize: 12 }}>{r.email}</td>
+                <td style={{ fontSize: 12 }}>{fdt(r.at)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
         </div>
       ))}
-      <button className="btn bg2" style={{fontSize:12,padding:"5px 13px"}} onClick={()=>setOpts(p=>[...p,""])}>+ Add option</button>
-    </div>}
-    <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
-      <button className="btn bg2" onClick={onClose}>Cancel</button>
-      <button className="btn bp" onClick={save}>{init?"Update":"Add Question"}</button>
     </div>
-  </div></div>);
+  );
 }
 
-/* ══════════════════════════════════════════════
-   USER / RESPONDENT APP
-══════════════════════════════════════════════ */
-function UserApp({auth,out,t}){
-  const [surveys,setSurveys]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [sel,setSel]=useState(null);
-  const [myResponses,setMyResponses]=useState({});
+function NewSurveyModal({ onClose, onSave }) {
+  const [f, setF] = useState({ title: "", desc: "", start: "", end: "" });
+  const [saving, setSaving] = useState(false);
 
-  /* real-time active surveys — no orderBy to avoid composite index requirement */
-  useEffect(()=>{
-    const unsub=surveysRef().onSnapshot(snap=>{
-      const active=snap.docs
-        .map(d=>({id:d.id,...d.data()}))
-        .filter(s=>s.status==="active")
-        .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  return (
+    <div className="modal-bg">
+      <div className="modal">
+        <div className="modal-title">➕ Create Survey</div>
+        <div className="form-group"><label className="label">Title *</label><input className="input" value={f.title} onChange={e => setF({ ...f, title: e.target.value })} placeholder="Survey title" autoFocus /></div>
+        <div className="form-group"><label className="label">Description</label><textarea className="textarea" rows={3} value={f.desc} onChange={e => setF({ ...f, desc: e.target.value })} placeholder="Purpose..." style={{ resize: "vertical" }} /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="form-group"><label className="label">Start</label><input className="input" type="date" value={f.start} onChange={e => setF({ ...f, start: e.target.value })} /></div>
+          <div className="form-group"><label className="label">End</label><input className="input" type="date" value={f.end} onChange={e => setF({ ...f, end: e.target.value })} /></div>
+        </div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" disabled={saving} onClick={async () => { if (!f.title.trim()) return alert("Title required."); setSaving(true); await onSave({ ...f, status: "draft", questions: [], responseCount: 0, createdAt: new Date().toISOString() }); setSaving(false); }}>{saving ? "Creating..." : "Create"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QModal({ init, onClose, onSave }) {
+  const [txt, setTxt] = useState(init?.text || "");
+  const [tp, setTp] = useState(init?.type || "mc");
+  const [opts, setOpts] = useState(init?.options?.length ? init.options : ["", ""]);
+  const [req, setReq] = useState(init?.req || false);
+
+  const save = () => {
+    if (!txt.trim()) return alert("Question text required.");
+    if (tp === "mc" && opts.filter(o => o.trim()).length < 2) return alert("Add 2+ options.");
+    onSave({ text: txt, type: tp, options: tp === "mc" ? opts.filter(o => o.trim()) : [], req });
+  };
+
+  return (
+    <div className="modal-bg">
+      <div className="modal">
+        <div className="modal-title">{init ? "✏️ Edit" : "➕ Add"} Question</div>
+        <div className="form-group"><label className="label">Question *</label><input className="input" value={txt} onChange={e => setTxt(e.target.value)} placeholder="Ask..." autoFocus /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="form-group"><label className="label">Type</label><select className="input" value={tp} onChange={e => setTp(e.target.value)}><option value="mc">🔘 Multiple Choice</option><option value="text">✍️ Open Text</option><option value="rating">⭐ Rating</option><option value="yn">👍 Yes/No</option></select></div>
+          <div className="form-group"><label className="label">Required?</label><div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, cursor: "pointer" }} onClick={() => setReq(!req)}><button className={`toggle ${req ? "on" : ""}`} /><span style={{ fontSize: 13, color: "#6B7280" }}>{req ? "Required" : "Optional"}</span></div></div>
+        </div>
+        {tp === "mc" && <div className="form-group"><label className="label">Options</label>{opts.map((o, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: "#6B7280", width: 24, textAlign: "right" }}>{String.fromCharCode(65 + i)}.</span>
+            <input className="input" value={o} onChange={e => setOpts(p => p.map((x, j) => j === i ? e.target.value : x))} placeholder={`Option ${i + 1}`} style={{ flex: 1 }} />
+            {opts.length > 2 && <button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setOpts(p => p.filter((_, j) => j !== i))}>✕</button>}
+          </div>
+        ))}<button className="btn btn-ghost" style={{ fontSize: 12 }} onClick={() => setOpts(p => [...p, ""])}>+ Add</button></div>}
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={save}>{init ? "Update" : "Add"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserApp({ auth, out, t }) {
+  const [surveys, setSurveys] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sel, setSel] = useState(null);
+  const [myResponses, setMyResponses] = useState({});
+
+  useEffect(() => {
+    const unsub = surveysRef().onSnapshot(snap => {
+      const active = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.status === "active").sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setSurveys(active);
       setLoading(false);
-    },err=>{setLoading(false);console.error(err);t("❌ Error loading surveys: "+err.message);});
-    return()=>unsub();
-  },[]);
+    }, err => { setLoading(false); console.error(err); t("❌ Error: " + err.message); });
+    return () => unsub();
+  }, []);
 
-  /* check which surveys this user already responded to */
-  useEffect(()=>{
-    if(!surveys.length)return;
-    surveys.forEach(sv=>{
-      responsesRef(sv.id).where("email","==",auth.email).limit(1).get()
-        .then(snap=>{if(!snap.empty)setMyResponses(m=>({...m,[sv.id]:true}));})
+  useEffect(() => {
+    if (!surveys.length) return;
+    surveys.forEach(sv => {
+      responsesRef(sv.id).where("email", "==", auth.email).limit(1).get()
+        .then(snap => { if (!snap.empty) setMyResponses(m => ({ ...m, [sv.id]: true })); })
         .catch(console.error);
     });
-  },[surveys,auth.email]);
+  }, [surveys, auth.email]);
 
-  const submit=async(sv,ans)=>{
-    try{
-      const resp={email:auth.email,name:auth.name,picture:auth.picture||null,at:new Date().toISOString(),ans};
-      await saveResponse(sv.id,resp);
-      /* increment response count */
-      await surveysRef().doc(sv.id).update({responseCount:firebase.firestore.FieldValue.increment(1)});
-      setMyResponses(m=>({...m,[sv.id]:true}));
+  const submit = async (sv, ans) => {
+    try {
+      const resp = { email: auth.email, name: auth.name, picture: auth.picture || null, at: new Date().toISOString(), ans };
+      await saveResponse(sv.id, resp);
+      await surveysRef().doc(sv.id).update({ responseCount: firebase.firestore.FieldValue.increment(1) });
+      setMyResponses(m => ({ ...m, [sv.id]: true }));
       setSel(null);
-      t("🎉 Response submitted! Thank you.");
-    }catch(e){t("❌ Submit failed: "+e.message);}
+      t("🎉 Response submitted!");
+    } catch (e) {
+      t("❌ Submit failed: " + e.message);
+    }
   };
 
-  if(loading) return <div className="loader"><div className="spinner"/><div style={{fontSize:14,color:"var(--mu)"}}>Loading surveys...</div></div>;
+  if (loading) return <div className="loader"><div className="spinner" /><p>Loading surveys...</p></div>;
 
-  return(<div style={{minHeight:"100vh",background:"var(--bg)"}}>
-    <div className="nav">
-      <div className="nav-logo">
-        <span style={{fontSize:22}}>📋</span>
-        <div>
-          <div className="nav-logo-text">{SF.APP}</div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginTop:-1}}>{SF.ORG}</div>
+  return (
+    <div style={{ minHeight: "100vh", background: "#F8FAFB" }}>
+      <div className="nav">
+        <div className="nav-logo">
+          <div className="nav-logo-icon">TTN</div>
+          <div><div className="nav-logo-text">{SF.APP}</div><div style={{ fontSize: 11, color: "rgba(255,255,255,.6)" }}>{SF.ORG}</div></div>
+        </div>
+        <div className="nav-r">
+          <Avatar auth={auth} />
+          <div style={{ lineHeight: 1.3 }}><span className="nav-user-name">{auth.name}</span><div style={{ fontSize: 11, color: "rgba(255,255,255,.8)" }}>{auth.email}</div></div>
+          <button className="btn btn-ghost" style={{ color: "white", borderColor: "rgba(255,255,255,.3)" }} onClick={out}>Sign out</button>
         </div>
       </div>
-      <div className="nav-r">
-        <Av auth={auth}/>
-        <div style={{lineHeight:1.3}}>
-          <div className="nav-user" style={{fontWeight:600,color:"#fff",fontSize:13}}>{auth.name}</div>
-          <div className="nav-user" style={{fontSize:11}}>{auth.email}</div>
-        </div>
-        <button className="btn bg2" style={{color:"#fff",borderColor:"rgba(255,255,255,.25)",fontSize:12}} onClick={out}>Sign out</button>
-      </div>
-    </div>
 
-    {sel
-      ?<SurveyFill sv={sel} auth={auth} back={()=>setSel(null)} submit={submit} already={myResponses[sel.id]}/>
-      :<div className="main" style={{maxWidth:720}}>
-        <div style={{fontSize:22,fontWeight:700,marginBottom:4}}>Hello, {auth.given_name||auth.name.split(" ")[0]} 👋</div>
-        <div style={{fontSize:14,color:"var(--mu)",marginBottom:22}}>Complete the surveys assigned to your team.</div>
-        {surveys.length===0&&<div className="empty"><div style={{fontSize:56}}>📭</div><p style={{marginTop:16,fontSize:17,fontWeight:600}}>No active surveys right now</p><p style={{fontSize:13,marginTop:8}}>Your admin will notify you when a new survey is launched.</p></div>}
-        {surveys.map(sv=>(
-          <div key={sv.id} className="card" style={{cursor:"pointer",border:myResponses[sv.id]?"1px solid #bbf7d0":"1px solid var(--bd)"}} onClick={()=>setSel(sv)}>
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16}}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>{sv.title}</div>
-                <div style={{fontSize:13,color:"var(--mu)",marginBottom:12,lineHeight:1.5}}>{sv.desc}</div>
-                <div style={{fontSize:12,color:"var(--mu)",display:"flex",gap:18,flexWrap:"wrap"}}>
-                  <span>📅 Closes {fd(sv.end)}</span>
-                  <span>❓ {(sv.questions||[]).length} questions</span>
-                  <span>⏱️ ~{(sv.questions||[]).length} min</span>
+      {sel ? <SurveyFill sv={sel} auth={auth} back={() => setSel(null)} submit={submit} already={myResponses[sel.id]} />
+        : <div className="main survey-fill-width">
+          <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6, background: "linear-gradient(135deg, #EB3624 0%, #F9AD1B 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Hello, {auth.given_name || auth.name.split(" ")[0]} 👋</div>
+          <div style={{ fontSize: 14, color: "#6B7280", marginBottom: 28 }}>Complete surveys assigned to your team</div>
+          {surveys.length === 0 && <div className="empty-state"><div className="empty-icon">📭</div><p className="empty-title">No active surveys</p><p style={{ fontSize: 13, color: "#6B7280", marginTop: 8 }}>You'll be notified when new surveys are available</p></div>}
+          {surveys.map(sv => (
+            <div key={sv.id} className="card" style={{ cursor: "pointer", border: myResponses[sv.id] ? "2px solid #10B981" : "1px solid #E5E7EB" }} onClick={() => setSel(sv)}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>{sv.title}</div>
+                  <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 14, lineHeight: 1.6 }}>{sv.desc}</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", display: "flex", gap: 18, flexWrap: "wrap" }}>
+                    <span>📅 Closes {fd(sv.end)}</span><span>❓ {(sv.questions || []).length} questions</span><span>⏱️ ~{(sv.questions || []).length} min</span>
+                  </div>
+                </div>
+                <div style={{ flexShrink: 0 }}>
+                  {myResponses[sv.id] ? <span className="badge badge-active">✓ Done</span> : <button className="btn btn-primary" style={{ fontSize: 13 }}>Start →</button>}
                 </div>
               </div>
-              <div style={{flexShrink:0,marginTop:2}}>
-                {myResponses[sv.id]?<span className="bdg bdg-active">✓ Submitted</span>:<button className="btn bp" style={{fontSize:13}}>Start →</button>}
-              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    }
-  </div>);
+          ))}
+        </div>
+      }
+    </div>
+  );
 }
 
-/* ── SURVEY FILL ── */
-function SurveyFill({sv,auth,back,submit,already}){
-  const [ans,setAns]=useState({});
-  const [step,setStep]=useState(0);
-  const [done,setDone]=useState(already);
-  const [submitting,setSubmitting]=useState(false);
-  const qs=sv.questions||[];
-  const q=qs[step];const total=qs.length;
-  const pct=Math.round((step/Math.max(total,1))*100);
-  const setA=(id,v)=>setAns(a=>({...a,[id]:v}));
-  const canNext=!q?.req||ans[q?.id];
+function SurveyFill({ sv, auth, back, submit, already }) {
+  const [ans, setAns] = useState({});
+  const [step, setStep] = useState(0);
+  const [done, setDone] = useState(already);
+  const [submitting, setSubmitting] = useState(false);
+  const qs = sv.questions || [];
+  const q = qs[step];
+  const total = qs.length;
+  const pct = Math.round((step / Math.max(total, 1)) * 100);
+  const setA = (id, v) => setAns(a => ({ ...a, [id]: v }));
+  const canNext = !q?.req || ans[q?.id];
 
-  const finish=async()=>{
-    const miss=qs.filter(q=>q.req&&!ans[q.id]);
-    if(miss.length){alert(`Please answer required questions (${miss.length} remaining).`);return;}
+  const finish = async () => {
+    const miss = qs.filter(q => q.req && !ans[q.id]);
+    if (miss.length) { alert(`Answer ${miss.length} required question(s).`); return; }
     setSubmitting(true);
-    await submit(sv,ans);
-    setDone(true);setSubmitting(false);
+    await submit(sv, ans);
+    setDone(true);
+    setSubmitting(false);
   };
 
-  if(done) return(
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"70vh"}}>
-      <div style={{textAlign:"center",padding:48}}>
-        <div style={{fontSize:80,marginBottom:18}}>🎉</div>
-        <div style={{fontSize:28,fontWeight:800,marginBottom:10}}>Thank You!</div>
-        <div style={{fontSize:15,color:"var(--mu)",marginBottom:8}}>Your response has been recorded successfully.</div>
-        <div style={{fontSize:13,color:"var(--mu)",marginBottom:30}}>— {SF.ORG} Survey Team</div>
-        <button className="btn bp" style={{fontSize:15,padding:"11px 30px"}} onClick={back}>← Back to Surveys</button>
+  if (done) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
+      <div style={{ textAlign: "center", padding: 48 }}>
+        <div style={{ fontSize: 80, marginBottom: 20 }}>🎉</div>
+        <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>Thank You!</div>
+        <div style={{ fontSize: 15, color: "#6B7280", marginBottom: 32 }}>Your response has been recorded successfully.</div>
+        <button className="btn btn-primary" style={{ fontSize: 15, padding: "12px 32px" }} onClick={back}>← Back to Surveys</button>
       </div>
     </div>
   );
 
-  if(total===0) return(<div className="sfw main"><button className="btn bg2" style={{marginBottom:18,fontSize:12}} onClick={back}>← Back</button><div className="card"><p style={{color:"var(--mu)"}}>This survey has no questions yet.</p></div></div>);
+  if (total === 0) return <div className="survey-fill-width main"><button className="btn btn-ghost" style={{ marginBottom: 20 }} onClick={back}>← Back</button><div className="card"><p>No questions yet</p></div></div>;
 
-  return(<div className="sfw main">
-    <button className="btn bg2" style={{marginBottom:20,fontSize:12}} onClick={back}>← Back</button>
-    <div className="card" style={{marginBottom:20,borderLeft:"4px solid var(--p)"}}>
-      <div style={{fontWeight:700,fontSize:18,marginBottom:4}}>{sv.title}</div>
-      <div style={{fontSize:13,color:"var(--mu)",lineHeight:1.5}}>{sv.desc}</div>
-    </div>
-    <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24}}>
-      <span style={{fontSize:13,color:"var(--mu)",whiteSpace:"nowrap"}}>Q {step+1} of {total}</span>
-      <div className="pb" style={{flex:1,margin:0}}><div className="pf" style={{width:pct+"%"}}/></div>
-      <span style={{fontSize:13,fontWeight:700,color:"var(--p)",whiteSpace:"nowrap"}}>{pct}%</span>
-    </div>
-    <div className="card" style={{minHeight:240}}>
-      <div style={{display:"flex",gap:14,marginBottom:22}}>
-        <div className="qnum">{step+1}</div>
-        <div><div style={{fontWeight:700,fontSize:16,lineHeight:1.45}}>{q.text}</div>{q.req&&<div style={{fontSize:12,color:"var(--da)",marginTop:5,fontWeight:600}}>* Required</div>}</div>
+  return (
+    <div className="survey-fill-width main">
+      <button className="btn btn-ghost" style={{ marginBottom: 22 }} onClick={back}>← Back</button>
+      <div className="card" style={{ marginBottom: 22, borderLeft: "4px solid #EB3624" }}>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>{sv.title}</div>
+        <div style={{ fontSize: 13, color: "#6B7280", lineHeight: 1.6 }}>{sv.desc}</div>
       </div>
-      {q.type==="mc"&&q.options.map(o=>(
-        <div key={o} className={`opt${ans[q.id]===o?" sel":""}`} onClick={()=>setA(q.id,o)}>
-          <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${ans[q.id]===o?"var(--p)":"var(--bd)"}`,background:ans[q.id]===o?"var(--p)":"#fff",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {ans[q.id]===o&&<div style={{width:8,height:8,borderRadius:"50%",background:"#fff"}}/>}
-          </div><span>{o}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 26 }}>
+        <span style={{ fontSize: 13, color: "#6B7280", whiteSpace: "nowrap" }}>Q {step + 1} of {total}</span>
+        <div className="progress-bar" style={{ flex: 1 }}><div className="progress-fill" style={{ width: pct + "%" }} /></div>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#EB3624", whiteSpace: "nowrap" }}>{pct}%</span>
+      </div>
+      <div className="card" style={{ minHeight: 240 }}>
+        <div style={{ display: "flex", gap: 14, marginBottom: 24 }}>
+          <div className="question-number">{step + 1}</div>
+          <div><div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.45, marginBottom: 4 }}>{q.text}</div>{q.req && <div style={{ fontSize: 12, color: "#EF4444", marginTop: 6, fontWeight: 600 }}>* Required</div>}</div>
         </div>
-      ))}
-      {q.type==="text"&&<textarea className="fi" rows={6} value={ans[q.id]||""} onChange={e=>setA(q.id,e.target.value)} placeholder="Type your answer here..." style={{resize:"vertical",fontSize:14,lineHeight:1.6}}/>}
-      {q.type==="rating"&&<div>
-        <div style={{display:"flex",gap:14,marginTop:4,flexWrap:"wrap"}}>
-          {[1,2,3,4,5].map(n=><div key={n} className={`rat${ans[q.id]===String(n)?" sel":""}`} onClick={()=>setA(q.id,String(n))}>{n}</div>)}
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginTop:10,fontSize:12,color:"var(--mu)",maxWidth:296}}><span>1 = Very Poor</span><span>5 = Excellent</span></div>
-      </div>}
-      {q.type==="yn"&&<div style={{display:"flex",gap:16,marginTop:4}}>
-        {["Yes","No"].map(o=><div key={o} className={`opt${ans[q.id]===o?" sel":""}`} style={{flex:1,justifyContent:"center",padding:"20px 16px",fontSize:16,fontWeight:700,gap:10}} onClick={()=>setA(q.id,o)}><span style={{fontSize:24}}>{o==="Yes"?"✅":"❌"}</span>{o}</div>)}
-      </div>}
+
+        {q.type === "mc" && q.options.map(o => (
+          <div key={o} className={`option${ans[q.id] === o ? " selected" : ""}`} onClick={() => setA(q.id, o)}>
+            <div style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${ans[q.id] === o ? "#EB3624" : "#E5E7EB"}`, background: ans[q.id] === o ? "#EB3624" : "white", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {ans[q.id] === o && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "white" }} />}
+            </div><span>{o}</span>
+          </div>
+        ))}
+
+        {q.type === "text" && <textarea className="textarea" rows={6} value={ans[q.id] || ""} onChange={e => setA(q.id, e.target.value)} placeholder="Type your answer..." style={{ resize: "vertical" }} />}
+
+        {q.type === "rating" && (
+          <div>
+            <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <div key={n} className={`rating-button${ans[q.id] === String(n) ? " selected" : ""}`} onClick={() => setA(q.id, String(n))}>{n}</div>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "#6B7280" }}>
+              <span>Very Poor</span><span>Excellent</span>
+            </div>
+          </div>
+        )}
+
+        {q.type === "yn" && (
+          <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+            {["Yes", "No"].map(o => (
+              <div key={o} className={`option${ans[q.id] === o ? " selected" : ""}`} style={{ flex: 1, justifyContent: "center", padding: "24px 16px", fontSize: 16, fontWeight: 700, gap: 10 }} onClick={() => setA(q.id, o)}>
+                <span style={{ fontSize: 28 }}>{o === "Yes" ? "✅" : "❌"}</span>{o}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 22 }}>
+        <button className="btn btn-ghost" disabled={step === 0} style={{ opacity: step === 0 ? 0.4 : 1 }} onClick={() => setStep(s => s - 1)}>← Previous</button>
+        <span style={{ fontSize: 12, color: "#6B7280" }}>{total - step - 1} remaining</span>
+        {step < total - 1 ? <button className="btn btn-primary" disabled={!canNext} style={{ opacity: canNext ? 1 : 0.4 }} onClick={() => setStep(s => s + 1)}>Next →</button> : <button className="btn btn-success" disabled={submitting} style={{ padding: "10px 26px" }} onClick={finish}>{submitting ? "Submitting..." : "Submit ✓"}</button>}
+      </div>
     </div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:18}}>
-      <button className="btn bg2" disabled={step===0} onClick={()=>setStep(s=>s-1)} style={{opacity:step===0?.4:1,fontSize:13}}>← Previous</button>
-      <span style={{fontSize:12,color:"var(--mu)"}}>{total-step-1} remaining</span>
-      {step<total-1
-        ?<button className="btn bp" disabled={!canNext} onClick={()=>setStep(s=>s+1)} style={{opacity:canNext?1:.4,fontSize:13}}>Next →</button>
-        :<button className="btn bs" disabled={submitting} onClick={finish} style={{fontSize:13,padding:"9px 24px"}}>{submitting?"Submitting...":"Submit Survey ✓"}</button>
-      }
-    </div>
-  </div>);
+  );
 }
 
-ReactDOM.render(<App/>,document.getElementById("root"));
+ReactDOM.render(<App />, document.getElementById("root"));
 </script>
 </body>
 </html>
