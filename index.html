@@ -30,6 +30,7 @@ html, body, #root { min-height: 100vh; }
 body { background: #F8FAFB; }
 
 :root {
+  --ttn-primary: #00519F;
   --ttn-red: #EB3624;
   --ttn-darkblue: #00519F;
   --ttn-purple: #623FA3;
@@ -253,14 +254,14 @@ body { background: #F8FAFB; }
   border: 1px solid #E5E7EB;
   border-radius: 14px;
   padding: 24px;
-  border-left: 5px solid var(--ttn-red);
-  box-shadow: 0 2px 8px rgba(235, 54, 36, 0.08);
+  border-left: 5px solid var(--ttn-primary);
+  box-shadow: 0 2px 8px rgba(0, 81, 159, 0.08);
 }
 
 .stat-number {
   font-size: 36px;
   font-weight: 800;
-  color: var(--ttn-red);
+  color: var(--ttn-primary);
   line-height: 1;
 }
 
@@ -873,18 +874,71 @@ async function saveResponse(sid, resp) {
 function exportXL(sv, responses) {
   try {
     const wb = XLSX.utils.book_new();
-    const h = ["#", "Email", "Full Name", "Submitted At", ...sv.questions.map((q, i) => `Q${i + 1}`), "Category"];
-    const rows = responses.map((r, i) => [i + 1, r.email, r.name || "", fdt(r.at), ...sv.questions.map(q => r.ans[q.id] || ""), ""]);
+    
+    // Sheet 1: Raw Responses
+    const h = ["#", "Email", "Full Name", "Submitted At", ...sv.questions.map((q, i) => `Q${i + 1}`), "Submitted Date"];
+    const rows = responses.map((r, i) => [i + 1, r.email, r.name || "", fdt(r.at), ...sv.questions.map(q => r.ans[q.id] || ""), fd(r.at)]);
     const ws = XLSX.utils.aoa_to_sheet([h, ...rows]);
-    ws["!cols"] = [{ wch: 4 }, { wch: 32 }, { wch: 24 }, { wch: 22 }, ...sv.questions.map(q => ({ wch: 30 }))];
+    ws["!cols"] = [{ wch: 4 }, { wch: 32 }, { wch: 24 }, { wch: 22 }, ...sv.questions.map(q => ({ wch: 30 })), { wch: 15 }];
     XLSX.utils.book_append_sheet(wb, ws, "Responses");
 
-    const s = [["SURVEY ANALYSIS BY CATEGORY"], [""], ...Object.entries(SURVEY_CATEGORIES).map(([key, cat]) => {
-      const catQs = sv.questions.filter(q => q.category === key);
-      return [cat.label, catQs.length + " questions"];
-    })];
+    // Sheet 2: Summary by Category
+    const summaryData = [["Category Analysis Summary"]];
+    summaryData.push([]);
     
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s), "Analysis");
+    Object.entries(SURVEY_CATEGORIES).forEach(([key, cat]) => {
+      const catQs = sv.questions.filter(q => q.category === key);
+      if (catQs.length > 0) {
+        summaryData.push([cat.label, `${catQs.length} questions`]);
+        catQs.forEach(q => {
+          const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
+          const count = ans.length;
+          const responseRate = count > 0 ? ((count / responses.length) * 100).toFixed(1) : "0";
+          if (q.type === "rating") {
+            const avg = count > 0 ? (ans.map(a => parseInt(a)).reduce((a, b) => a + b, 0) / count).toFixed(1) : "N/A";
+            summaryData.push([`  ${q.text}`, `Avg: ${avg}/5 (${count}/${responses.length} = ${responseRate}%)`]);
+          } else {
+            summaryData.push([`  ${q.text}`, `${count}/${responses.length} = ${responseRate}%`]);
+          }
+        });
+        summaryData.push([]);
+      }
+    });
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    summarySheet["!cols"] = [{ wch: 50 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+
+    // Sheet 3: Category Statistics Table
+    const statsData = [["Category", "Questions", "Total Responses", "Response Rate %", "Average Rating (if applicable)"]];
+    Object.entries(SURVEY_CATEGORIES).forEach(([key, cat]) => {
+      const catQs = sv.questions.filter(q => q.category === key);
+      const ratingQs = catQs.filter(q => q.type === "rating");
+      if (catQs.length > 0) {
+        let avgRating = "N/A";
+        if (ratingQs.length > 0) {
+          const allRatings = [];
+          ratingQs.forEach(q => {
+            const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
+            ans.forEach(a => allRatings.push(parseInt(a)));
+          });
+          if (allRatings.length > 0) {
+            avgRating = (allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2);
+          }
+        }
+        const catResponses = catQs.reduce((sum, q) => {
+          const count = responses.filter(r => r.ans?.[q.id]).length;
+          return sum + count;
+        }, 0);
+        const responseRate = responses.length > 0 ? ((catResponses / (catQs.length * responses.length)) * 100).toFixed(1) : "0";
+        statsData.push([cat.label, catQs.length, catResponses, responseRate, avgRating]);
+      }
+    });
+    
+    const statsSheet = XLSX.utils.aoa_to_sheet(statsData);
+    statsSheet["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, statsSheet, "Statistics");
+
     XLSX.writeFile(wb, `${sv.title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.xlsx`);
   } catch (e) {
     alert("Export error: " + e.message);
@@ -1084,7 +1138,7 @@ function AdminApp({ auth, out, t }) {
             <div style={{ fontSize: 13, fontWeight: 600, color: "white" }}>{auth.name}</div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,.8)" }}>{auth.email}</div>
           </div>
-          <button className="btn btn-ghost" style={{ color: "white", borderColor: "rgba(255,255,255,.3)" }} onClick={out}>Sign out</button>
+          <button className="btn" style={{ color: "white", backgroundColor: "rgba(255,255,255,.2)", border: "1px solid rgba(255,255,255,.4)", padding: "8px 14px", borderRadius: "8px", fontSize: "12px" }} onClick={out}>Sign out</button>
         </div>
       </div>
 
@@ -1396,7 +1450,8 @@ function AnalyticsView({ sv, responses, categoryFilter, setCategoryFilter }) {
             </div>
             {catQs.map((q, i) => {
               const ans = responses.map(r => r.ans?.[q.id]).filter(Boolean);
-              const analysis = q.type === "rating" ? generateRatingAnalysis(ans) : { avg: "—", sentiment: "Pending" };
+              const isRating = q.type === "rating";
+              const analysis = isRating ? generateRatingAnalysis(ans) : generateTextAnalysis(ans);
 
               return (
                 <div key={q.id} className="card">
@@ -1410,18 +1465,18 @@ function AnalyticsView({ sv, responses, categoryFilter, setCategoryFilter }) {
 
                   <div className="analytics-box">
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>✨ Summary</div>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: "#EB3624" }}>{analysis.summary}</div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: "#00519F" }}>{analysis.summary}</div>
                   </div>
 
-                  {q.type === "rating" && ans.length > 0 && (
+                  {isRating && ans.length > 0 && (
                     <div className="chart-container">
                       <canvas ref={el => chartRefs.current[q.id] = el} />
                     </div>
                   )}
 
-                  {q.type === "text" && ans.length > 0 && (
+                  {!isRating && ans.length > 0 && (
                     <div style={{ marginTop: 16 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>📝 Responses</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>📝 Sample Responses</div>
                       {ans.slice(0, 3).map((a, j) => (
                         <div key={j} style={{ padding: 12, background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10, marginBottom: 8, fontSize: 13, lineHeight: 1.6 }}>
                           "{a}"
@@ -1445,7 +1500,14 @@ function generateRatingAnalysis(answers) {
   const vs = answers.map(a => parseInt(a)).filter(Boolean);
   const avg = (vs.reduce((a, b) => a + b, 0) / vs.length).toFixed(1);
   const sentiment = avg >= 4.5 ? "Exceptional" : avg >= 4 ? "Very Good" : avg >= 3 ? "Moderate" : avg >= 2 ? "Needs Attention" : "Critical";
-  return { avg, sentiment, summary: `Average: ${avg}/5 (${sentiment}) — ${vs.length} respondents` };
+  return { avg, sentiment, summary: `Average: ${avg}/5 (${sentiment}) from ${vs.length} respondents` };
+}
+
+function generateTextAnalysis(answers) {
+  if (!answers.length) return { summary: "No responses collected yet" };
+  const uniqueAnswers = [...new Set(answers)];
+  const keywordCount = uniqueAnswers.length;
+  return { summary: `${keywordCount} unique qualitative insights collected. Responses show diverse perspectives on this topic.` };
 }
 
 function AllResponses({ surveys }) {
