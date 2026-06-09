@@ -1049,6 +1049,17 @@ function AdminApp({ auth, out, t }) {
     } 
   };
   const handleUpd = async (id, patch) => { try { await updateSurvey(id, patch); } catch (e) { t("❌ Error: " + e.message); } };
+  const handleDel = async (id, title) => {
+    if (window.confirm(`⚠️ Delete "${title}"?\n\nThis will remove the survey and all its responses. This action cannot be undone.`)) {
+      try {
+        await surveysRef().doc(id).delete();
+        setSurveys(s => s.filter(x => x.id !== id));
+        t("🗑️ Survey deleted.");
+      } catch (e) {
+        t("❌ Delete failed: " + e.message);
+      }
+    }
+  };
 
   if (loading) return <div className="loader"><div className="spinner" /><p>Loading...</p></div>;
 
@@ -1092,9 +1103,9 @@ function AdminApp({ auth, out, t }) {
           <div className="si" onClick={out}><span>🚪</span>Sign Out</div>
         </div>
         <div className="main">
-          {sel ? <SurveyDetail sv={sel} back={() => setSel(null)} upd={handleUpd} t={t} atab={atab} setAtab={setAtab} />
+          {sel ? <SurveyDetail sv={sel} back={() => setSel(null)} upd={handleUpd} del={handleDel} t={t} atab={atab} setAtab={setAtab} />
             : pg === "dash" ? <Dashboard surveys={surveys} auth={auth} onSel={sv => { setSel(sv); setAtab("questions"); }} />
-              : pg === "surveys" ? <SurveyList surveys={surveys} onSel={sv => { setSel(sv); setAtab("questions"); }} upd={handleUpd} t={t} onNew={() => setNm(true)} />
+              : pg === "surveys" ? <SurveyList surveys={surveys} onSel={sv => { setSel(sv); setAtab("questions"); }} upd={handleUpd} del={handleDel} t={t} onNew={() => setNm(true)} />
                 : <AllResponses surveys={surveys} />
           }
         </div>
@@ -1136,7 +1147,7 @@ function Dashboard({ surveys, auth, onSel }) {
   );
 }
 
-function SurveyList({ surveys, onSel, upd, t, onNew }) {
+function SurveyList({ surveys, onSel, upd, del, t, onNew }) {
   const tog = async sv => {
     if (sv.status === "draft") { await upd(sv.id, { status: "active" }); t("✅ Survey activated!"); }
     else if (sv.status === "active") { await upd(sv.id, { status: "ended" }); t("⏹ Survey ended."); }
@@ -1162,6 +1173,7 @@ function SurveyList({ surveys, onSel, upd, t, onNew }) {
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn btn-outline" style={{ fontSize: 12, flex: 1 }} onClick={() => onSel(sv)}>View</button>
               {sv.status !== "ended" && <button className={`btn ${sv.status === "draft" ? "btn-success" : "btn-primary"}`} style={{ fontSize: 12, flex: 1 }} onClick={() => tog(sv)}>{sv.status === "draft" ? "Activate" : "End"}</button>}
+              <button className="btn btn-ghost" style={{ fontSize: 12, color: "#EF4444", borderColor: "#EF4444", padding: "10px 12px" }} onClick={() => del(sv.id, sv.title)}>🗑️</button>
             </div>
           </div>
         ))}
@@ -1170,7 +1182,7 @@ function SurveyList({ surveys, onSel, upd, t, onNew }) {
   );
 }
 
-function SurveyDetail({ sv, back, upd, t, atab, setAtab }) {
+function SurveyDetail({ sv, back, upd, del, t, atab, setAtab }) {
   const [qs, setQs] = useState(() => {
     const questions = sv.questions || DEFAULT_QUESTIONS;
     return Array.isArray(questions) && questions.length > 0 ? questions : DEFAULT_QUESTIONS;
@@ -1214,6 +1226,7 @@ function SurveyDetail({ sv, back, upd, t, atab, setAtab }) {
         <span style={{ fontSize: 12, background: responses.length > 0 ? "#f0fdf4" : "rgba(235,54,36,0.1)", color: responses.length > 0 ? "#10B981" : "#EB3624", borderRadius: 99, padding: "5px 13px", fontWeight: 600 }}>💬 {responses.length}</span>
         {sv.status !== "ended" && <button className={`btn ${sv.status === "draft" ? "btn-success" : "btn-primary"}`} style={{ fontSize: 12 }} onClick={tog}>{sv.status === "draft" ? "▶ Activate" : "⏹ End"}</button>}
         <button className="btn btn-outline" style={{ fontSize: 12 }} onClick={() => exportXL(sv, responses)}>📥 Excel</button>
+        <button className="btn btn-ghost" style={{ fontSize: 12, color: "#EF4444", borderColor: "#EF4444" }} onClick={() => del(sv.id, sv.title)}>🗑️ Delete</button>
       </div>
 
       <div className="tab-row">
