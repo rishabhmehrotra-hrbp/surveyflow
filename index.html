@@ -1579,23 +1579,145 @@ function QuestionsTab({ qs, filteredQs, categoryFilter, setCategoryFilter, setQs
 }
 
 function ResponsesTable({ sv, responses }) {
+  const [idx, setIdx] = useState(0);
+  const [search, setSearch] = useState("");
+
   if (!responses.length) return <div className="empty-state"><p>No responses yet</p></div>;
+
+  const filtered = responses.filter(r =>
+    !search || (r.email || "").toLowerCase().includes(search.toLowerCase()) || (r.name || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const cur = filtered[idx] || filtered[0];
+  const total = filtered.length;
+
+  React.useEffect(() => { setIdx(0); }, [search]);
+
+  const qs = sv.questions || [];
+
+  const exportCSV = () => {
+    const headers = ["Name", "Email", "Submitted", ...qs.map((q, i) => `Q${i+1}: ${q.text}`)];
+    const rows = responses.map(r => [
+      r.name || "", r.email || "", fdt(r.at),
+      ...qs.map(q => {
+        const a = r.ans?.[q.id];
+        return q.type === "rating" ? (RESPONSE_LABELS[a] || a || "") : (a || "");
+      })
+    ]);
+    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `responses_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const ratingColors = { "1": "#EF4444", "2": "#F97316", "3": "#F59E0B", "4": "#10B981", "5": "#00519F" };
+
   return (
     <div>
-      <div style={{ marginBottom: 18, fontSize: 13, color: "#6B7280" }}>{responses.length} response{responses.length !== 1 ? "s" : ""}</div>
-      <div className="table-wrapper">
-        <table>
-          <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Submitted</th></tr></thead>
-          <tbody>{responses.map((r, i) => (
-            <tr key={r.id}>
-              <td>{i + 1}</td>
-              <td><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Avatar auth={{ name: r.name }} size={24} /><span style={{ fontWeight: 600 }}>{r.name || "—"}</span></div></td>
-              <td style={{ fontSize: 12 }}>{r.email}</td>
-              <td style={{ fontSize: 12 }}>{fdt(r.at)}</td>
-            </tr>
-          ))}</tbody>
-        </table>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4 }}>Individual Responses</div>
+          <div style={{ fontSize: 13, color: "#6B7280" }}>Browse all individual survey responses. Search by email, filter by track, or export to CSV.</div>
+        </div>
+        <button className="btn btn-outline" style={{ fontSize: 13 }} onClick={exportCSV}>📥 Export CSV</button>
       </div>
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 20, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
+          <input
+            style={{ width: "100%", padding: "9px 14px 9px 14px", border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 13, outline: "none", boxSizing: "border-box" }}
+            placeholder="🔍 Search by email..."
+            value={search} onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div style={{ fontSize: 13, color: "#6B7280" }}>{total} response{total !== 1 ? "s" : ""}</div>
+      </div>
+
+      {!cur ? (
+        <div className="empty-state"><p>No matching responses</p></div>
+      ) : (
+        <div style={{ border: "1.5px solid #E5E7EB", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+
+          {/* Nav header */}
+          <div style={{ background: "#F8FAFB", borderBottom: "1.5px solid #E5E7EB", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <button
+              onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0}
+              style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid #E5E7EB", background: "white", cursor: idx === 0 ? "not-allowed" : "pointer", fontSize: 18, color: idx === 0 ? "#D1D5DB" : "#374151", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            >‹</button>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>{cur.email}</div>
+              <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{idx + 1} of {total}</div>
+            </div>
+            <button
+              onClick={() => setIdx(i => Math.min(total - 1, i + 1))} disabled={idx === total - 1}
+              style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid #E5E7EB", background: "white", cursor: idx === total - 1 ? "not-allowed" : "pointer", fontSize: 18, color: idx === total - 1 ? "#D1D5DB" : "#374151", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            >›</button>
+          </div>
+
+          {/* Meta bar */}
+          <div style={{ background: "white", borderBottom: "1.5px solid #E5E7EB", padding: "12px 24px", display: "flex", gap: 28, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, color: "#6B7280" }}>Status:</span>
+              <span style={{ background: "#DCFCE7", color: "#065F46", borderRadius: 99, padding: "3px 12px", fontSize: 12, fontWeight: 700, letterSpacing: "0.5px" }}>SUBMITTED</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, color: "#6B7280" }}>Submitted:</span>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>{fdt(cur.at)}</span>
+            </div>
+            {cur.name && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 12, color: "#6B7280" }}>Name:</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>{cur.name}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Answers */}
+          <div style={{ padding: "0 0 8px", background: "white" }}>
+            {Object.entries(SURVEY_CATEGORIES).map(([catKey, cat]) => {
+              const catQs = qs.filter(q => q.category === catKey);
+              if (!catQs.length) return null;
+              return (
+                <div key={catKey}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "1px", padding: "18px 24px 8px", background: "#FAFAFA", borderTop: "1px solid #F3F4F6" }}>
+                    {cat.icon} &nbsp;{cat.label}
+                  </div>
+                  {catQs.map((q) => {
+                    const answer = cur.ans?.[q.id];
+                    const qNum = qs.indexOf(q) + 1;
+                    const displayLabel = q.type === "rating" ? (RESPONSE_LABELS[answer] || answer) : answer;
+
+                    return (
+                      <div key={q.id} style={{ padding: "14px 24px", borderBottom: "1px solid #F3F4F6" }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                          Q{qNum}: {q.text}
+                        </div>
+                        {q.type === "rating" ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ display: "flex", gap: 3 }}>
+                              {["1","2","3","4","5"].map(n => (
+                                <div key={n} style={{ width: 32, height: 7, borderRadius: 4, background: answer && parseInt(n) <= parseInt(answer) ? (ratingColors[answer] || "#00519F") : "#E5E7EB" }} />
+                              ))}
+                            </div>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: ratingColors[answer] || "#9CA3AF" }}>
+                              {displayLabel || <span style={{ color: "#D1D5DB", fontWeight: 400 }}>—</span>}
+                            </span>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 14, color: answer ? "#111827" : "#D1D5DB", lineHeight: 1.6, fontStyle: answer ? "normal" : "italic" }}>
+                            {answer || "No response"}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2234,32 +2356,53 @@ function AnalyticsView({ sv, responses, categoryFilter, setCategoryFilter }) {
       if (q.type !== "rating") return;
       if (!chartRefs.current[q.id]) return;
 
-      const vs = responses.map(r => parseInt(r.ans?.[q.id])).filter(Boolean);
-      const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      vs.forEach(v => counts[v]++);
+      const vs = responses.map(r => parseInt(r.ans?.[q.id])).filter(n => !isNaN(n) && n > 0);
+      const counts = [0,0,0,0,0];
+      vs.forEach(v => { if (v >= 1 && v <= 5) counts[v-1]++; });
 
-      const colors = ["#EF4444", "#F9AD1B", "#F59E0B", "#10B981", "#00519F"];
+      const colors = ["#EF4444", "#F97316", "#F59E0B", "#10B981", "#00519F"];
+      const labels = ["1 - Strongly Disagree", "2 - Disagree", "3 - Neutral", "4 - Agree", "5 - Strongly Agree"];
       const ctx = chartRefs.current[q.id].getContext("2d");
       if (window.charts && window.charts[q.id]) window.charts[q.id].destroy();
       if (!window.charts) window.charts = {};
 
+      // Only show segments that have responses
+      const activeLabels = labels.filter((_, i) => counts[i] > 0);
+      const activeData   = counts.filter(c => c > 0);
+      const activeColors = colors.filter((_, i) => counts[i] > 0);
+
       window.charts[q.id] = new Chart(ctx, {
-        type: "bar",
+        type: "doughnut",
         data: {
-          labels: ["1 - Strongly Disagree", "2 - Disagree", "3 - Neutral", "4 - Agree", "5 - Strongly Agree"],
+          labels: activeLabels,
           datasets: [{
-            label: "Responses",
-            data: [counts[1], counts[2], counts[3], counts[4], counts[5]],
-            backgroundColor: colors,
-            borderRadius: 6
+            data: activeData,
+            backgroundColor: activeColors,
+            borderWidth: 2,
+            borderColor: "#ffffff",
+            hoverOffset: 6
           }]
         },
         options: {
-          indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { beginAtZero: true } }
+          cutout: "60%",
+          plugins: {
+            legend: {
+              display: true,
+              position: "right",
+              labels: { font: { size: 12 }, padding: 14, usePointStyle: true, pointStyle: "circle" }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                  const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+                  return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                }
+              }
+            }
+          }
         }
       });
     });
@@ -2342,8 +2485,27 @@ function AnalyticsView({ sv, responses, categoryFilter, setCategoryFilter }) {
                       </div>
 
                       {isRating && ans.length > 0 && (
-                        <div className="chart-container">
-                          <canvas ref={el => chartRefs.current[q.id] = el} />
+                        <div style={{ display: "flex", gap: 20, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
+                          {/* Pie chart */}
+                          <div style={{ position: "relative", height: 220, width: 460, maxWidth: "100%" }}>
+                            <canvas ref={el => chartRefs.current[q.id] = el} />
+                          </div>
+                          {/* Rating breakdown bars */}
+                          <div style={{ flex: 1, minWidth: 180 }}>
+                            {[["5","Strongly Agree","#00519F"],["4","Agree","#10B981"],["3","Neutral","#F59E0B"],["2","Disagree","#F97316"],["1","Strongly Disagree","#EF4444"]].map(([val, lbl, col]) => {
+                              const cnt = ans.filter(a => a === val).length;
+                              const pct = ans.length ? Math.round(cnt / ans.length * 100) : 0;
+                              return (
+                                <div key={val} style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontSize: 11, color: "#6B7280", width: 120, flexShrink: 0 }}>{val} – {lbl}</span>
+                                  <div style={{ flex: 1, height: 8, background: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: `${pct}%`, background: col, borderRadius: 99, transition: "width 0.4s" }} />
+                                  </div>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: col, width: 30, textAlign: "right" }}>{cnt}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
 
