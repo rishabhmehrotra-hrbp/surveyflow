@@ -1689,13 +1689,13 @@ function pct45(ratings) {
   return Math.round((valid.filter(r => r >= 4).length / valid.length) * 100);
 }
 
-// Newer Scorecard: sum of all ratings / 20 * 100, integer, no decimal
+// Newer Scorecard: (average of all ratings) ÷ 5 × 100, integer, no decimal
 function newerScore(ratings20) {
   const valid = ratings20.map(r => parseInt(r)).filter(n => !isNaN(n) && n > 0);
   if (!valid.length) return null;
-  return Math.round((valid.reduce((a, b) => a + b, 0) / 20) * 100);
+  const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+  return Math.round((avg / 5) * 100);
 }
-
 function scoreColor(p) {
   if (p === null || p === undefined) return "#9CA3AF";
   if (p >= 80) return "#10B981";
@@ -1850,7 +1850,7 @@ function NewerScorecard({ sv, responses }) {
       {expanded && (
         <div style={{ padding: "0 24px 24px" }}>
           <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 14, background: "#F8FAFB", borderRadius: 8, padding: "10px 14px" }}>
-            ⓘ Score = (Sum of Q1–Q20 ratings) ÷ 20 × 100 &nbsp;•&nbsp;
+            ⓘ Score = (Average of Q1–Q20 ratings) ÷ 5 × 100 &nbsp;•&nbsp;
             <span style={{ background:"#DCFCE7", color:"#15803D", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>≥80 Green</span>&nbsp;
             <span style={{ background:"#FEF9C3", color:"#A16207", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>60–79 Amber</span>&nbsp;
             <span style={{ background:"#FEE2E2", color:"#B91C1C", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>&lt;60 Red</span>
@@ -1877,7 +1877,7 @@ function NewerScorecard({ sv, responses }) {
                   <th style={{ width: 40 }}>#</th>
                   <th>NAME</th>
                   <th>EMAIL</th>
-                  <th>SCORE (Q1–Q20 ÷ 20 × 100)</th>
+                  <th>SCORE (Avg Q1–Q20 ÷ 5 × 100)</th>
                   <th>STATUS</th>
                 </tr>
               </thead>
