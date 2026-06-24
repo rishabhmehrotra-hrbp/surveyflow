@@ -1604,151 +1604,166 @@ function ResponsesTable({ sv, responses }) {
    ADVANCED ANALYTICS HELPERS
    ============================================================ */
 
-// Map survey categories to short display labels for the Category Overview tiles
-const CATEGORY_TILE_MAP = {
-  "managerial_feedback": [
-    { label: "Team", qIdx: 0 },      // collaboration within team
-    { label: "RM", qIdx: 1 },        // Reporting Manager
-    { label: "Mentor", qIdx: 2 },    // Mentor guidance
-    { label: "Track Lead", qIdx: 3 } // BU Head
-  ],
-  "trust_org": [
-    { label: "Leadership", qIdx: 1 } // Leadership communication
-  ],
-  "wlb_association": [
-    { label: "Work-Life Balance", qIdx: 0 }
-  ],
-  "culture": [
-    { label: "Culture", qIdx: 0 }
-  ],
-  "internal_feedback": [
-    { label: "IT", qIdx: 0 },
-    { label: "Admin", qIdx: 1 },
-    { label: "Finance", qIdx: 2 },
-    { label: "HR SPOC", qIdx: 3 },
-    { label: "TA", qIdx: 4 }
-  ],
-  "trust_org_role": [
-    { label: "Role", qIdx: 2 } // clear role expectations
-  ]
-};
+/*
+  CATEGORY OVERVIEW TILE MAPPING (from design spec):
+  ─────────────────────────────────────────────────────
+  Managerial Feedback
+    "collaboration within my immediate team"  → Team
+    "positive working relationship with my Reporting Manager" → RM
+    "mentor provides effective guidance"       → Mentor
+    "BU Head to be approachable"               → BUH
+  Trust in Organization
+    "TTN Leadership communication is clear"    → Transparency
+    (others: Not to be added)
+  Growth
+    "quality of work in my current role"       → Role
+    "career advancement at TTN" + "long-term association" → Career Advancement (avg of both)
+  Work-Life Balance & Association
+    "work-life balance"                        → WLB
+    (contributions valued by manager: Not to be added)
+  Recognition
+    "valued by internal and external stakeholders" → Recognition
+    (sharing concerns: Not to be added)
+  Culture & Engagement
+    "treated fairly and respectfully"          → Fairness
+  Internal Support & Feedback
+    IT, Admin, Finance, PE Team, TA Team
+*/
 
-// RM feedback dimensions (mapped from managerial_feedback questions + recognition)
-const RM_DIMENSIONS = [
-  { key: "clear_exp",   label: "Clear Expectations", catKey: "trust_org",    qIdx: 2 },
-  { key: "connect",     label: "Connect",             catKey: "managerial_feedback", qIdx: 1 },
-  { key: "recognition", label: "Recognition",         catKey: "recognition", qIdx: 0 },
-  { key: "timely_fb",   label: "Timely Feedback",     catKey: "recognition", qIdx: 1 },
-  { key: "open_fb",     label: "Open to Feedback",    catKey: "culture",     qIdx: 0 },
-  { key: "respect",     label: "Respect",             catKey: "wlb_association", qIdx: 1 },
-  { key: "guidance",    label: "Guidance",            catKey: "managerial_feedback", qIdx: 2 },
+// Category tiles definition: { label, catKey, textMatch, multiMatch? }
+// multiMatch: array of textMatch strings → average their pct45 scores
+const CATEGORY_TILES_DEF = [
+  // Managerial Feedback
+  { label: "Team",        catKey: "managerial_feedback", textMatch: "collaboration within my immediate team" },
+  { label: "RM",          catKey: "managerial_feedback", textMatch: "reporting manager" },
+  { label: "Mentor",      catKey: "managerial_feedback", textMatch: "mentor provides effective" },
+  { label: "BUH",         catKey: "managerial_feedback", textMatch: "bu head" },
+  // Trust in Org
+  { label: "Transparency", catKey: "trust_org",           textMatch: "leadership communication" },
+  // Growth
+  { label: "Role",          catKey: "growth",              textMatch: "quality of work in my current role" },
+  { label: "Career Advancement", catKey: "growth",         multiMatch: ["career advancement", "long-term association"] },
+  // WLB
+  { label: "WLB",           catKey: "wlb_association",     textMatch: "work-life balance" },
+  // Recognition
+  { label: "Recognition",   catKey: "recognition",          textMatch: "internal and external stakeholders" },
+  // Culture
+  { label: "Fairness",      catKey: "culture",              textMatch: "fairly and respectfully" },
+  // Internal Support
+  { label: "IT",            catKey: "internal_feedback",    textMatch: "it team" },
+  { label: "Admin",         catKey: "internal_feedback",    textMatch: "admin team" },
+  { label: "Finance",       catKey: "internal_feedback",    textMatch: "finance team" },
+  { label: "PE Team",       catKey: "internal_feedback",    textMatch: "people enablement" },
+  { label: "TA Team",       catKey: "internal_feedback",    textMatch: "ta team" },
+];
+
+/*
+  NEWER SCORECARD scoring:
+  For each respondent: score = (sum of all Q1-Q20 ratings) / 20 * 100 → integer (no decimal)
+  RAG: ≥80 Green, 60-79 Amber, <60 Red
+  (This uses ALL rating questions 1-20, not pct45)
+*/
+
+/*
+  RM SCORECARD dimensions (category-based % = pct45 per category):
+  Columns = survey categories that have rating questions:
+    Managerial Feedback, Trust in Org, Growth, WLB & Association, Recognition, Culture & Engagement, Internal Support
+  Each cell = pct45 of all ratings in that category from that respondent
+  Overall = pct45 of all rating answers
+*/
+
+const SCORECARD_CAT_COLS = [
+  { key: "managerial_feedback", label: "Managerial" },
+  { key: "trust_org",           label: "Trust & Org" },
+  { key: "growth",              label: "Growth" },
+  { key: "wlb_association",     label: "WLB" },
+  { key: "recognition",         label: "Recognition" },
+  { key: "culture",             label: "Culture" },
+  { key: "internal_feedback",   label: "Internal Spt" },
 ];
 
 function pct45(ratings) {
-  if (!ratings.length) return null;
-  return Math.round((ratings.filter(r => r >= 4).length / ratings.length) * 100);
+  if (!ratings || !ratings.length) return null;
+  const valid = ratings.filter(r => !isNaN(r) && r > 0);
+  if (!valid.length) return null;
+  return Math.round((valid.filter(r => r >= 4).length / valid.length) * 100);
+}
+
+// Newer Scorecard: sum of all ratings / 20 * 100, integer, no decimal
+function newerScore(ratings20) {
+  const valid = ratings20.map(r => parseInt(r)).filter(n => !isNaN(n) && n > 0);
+  if (!valid.length) return null;
+  return Math.round((valid.reduce((a, b) => a + b, 0) / 20) * 100);
 }
 
 function scoreColor(p) {
-  if (p === null) return "#9CA3AF";
+  if (p === null || p === undefined) return "#9CA3AF";
   if (p >= 80) return "#10B981";
   if (p >= 60) return "#F9AD1B";
   return "#EF4444";
 }
 
 function scoreBg(p) {
-  if (p === null) return "#F9FAFB";
+  if (p === null || p === undefined) return "#F9FAFB";
   if (p >= 80) return "#F0FDF4";
   if (p >= 60) return "#FFFBEB";
   return "#FEF2F2";
 }
 
 function ragLabel(p) {
-  if (p === null) return "N/A";
+  if (p === null || p === undefined) return "N/A";
   if (p >= 80) return "Green";
   if (p >= 60) return "Amber";
   return "Red";
 }
 
+function ScorePill({ score, size = "md" }) {
+  const fs = size === "lg" ? 15 : 13;
+  const px = size === "lg" ? "6px 16px" : "4px 12px";
+  if (score === null || score === undefined) return <span style={{ color: "#9CA3AF", fontSize: fs }}>—</span>;
+  return (
+    <span style={{ display: "inline-block", background: scoreBg(score), color: scoreColor(score), fontWeight: 700, fontSize: fs, borderRadius: 8, padding: px, border: `1.5px solid ${scoreColor(score)}20` }}>
+      {score}%
+    </span>
+  );
+}
+
 /* ─── Category Overview Tiles ─── */
 function CategoryOverview({ sv, responses }) {
-  // Build a flat list of { label, score }
   const qs = sv.questions || [];
-  const tiles = [];
 
-  // Role clarity (trust_org q2)
-  const roleQ = qs.find(q => q.category === "trust_org" && q.text.toLowerCase().includes("expected of me"));
-  if (roleQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[roleQ.id])).filter(Boolean);
-    tiles.push({ label: "Role", score: pct45(ratings) });
+  // Helper: find question by category + partial text match
+  function findQ(catKey, textMatch) {
+    return qs.find(q => q.category === catKey && q.text.toLowerCase().includes(textMatch.toLowerCase()));
   }
 
-  // RM (managerial_feedback q1)
-  const rmQ = qs.find(q => q.category === "managerial_feedback" && q.text.toLowerCase().includes("reporting manager"));
-  if (rmQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[rmQ.id])).filter(Boolean);
-    tiles.push({ label: "RM", score: pct45(ratings) });
-  }
-
-  // Mentor (managerial_feedback q2)
-  const mentorQ = qs.find(q => q.category === "managerial_feedback" && q.text.toLowerCase().includes("mentor"));
-  if (mentorQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[mentorQ.id])).filter(Boolean);
-    tiles.push({ label: "Mentor", score: pct45(ratings) });
-  }
-
-  // Team (managerial_feedback q0)
-  const teamQ = qs.find(q => q.category === "managerial_feedback" && q.text.toLowerCase().includes("collaboration"));
-  if (teamQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[teamQ.id])).filter(Boolean);
-    tiles.push({ label: "Team", score: pct45(ratings) });
-  }
-
-  // Track Lead (managerial_feedback q3 - BU Head)
-  const tlQ = qs.find(q => q.category === "managerial_feedback" && q.text.toLowerCase().includes("bu head"));
-  if (tlQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[tlQ.id])).filter(Boolean);
-    tiles.push({ label: "Track Lead", score: pct45(ratings) });
-  }
-
-  // Leadership (trust_org q1)
-  const leadQ = qs.find(q => q.category === "trust_org" && q.text.toLowerCase().includes("communication"));
-  if (leadQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[leadQ.id])).filter(Boolean);
-    tiles.push({ label: "Leadership", score: pct45(ratings) });
-  }
-
-  // Work-Life Balance
-  const wlbQ = qs.find(q => q.category === "wlb_association" && q.text.toLowerCase().includes("work-life"));
-  if (wlbQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[wlbQ.id])).filter(Boolean);
-    tiles.push({ label: "Work-Life Balance", score: pct45(ratings) });
-  }
-
-  // Culture
-  const cultQ = qs.find(q => q.category === "culture");
-  if (cultQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[cultQ.id])).filter(Boolean);
-    tiles.push({ label: "Culture", score: pct45(ratings) });
-  }
-
-  // Internal support tiles
-  [["IT","it team"],["Admin","admin team"],["Finance","finance team"],["HR SPOC","people enablement"],["TA","ta team"]].forEach(([lbl, kw]) => {
-    const q = qs.find(q => q.category === "internal_feedback" && q.text.toLowerCase().includes(kw));
-    if (q) {
-      const ratings = responses.map(r => parseInt(r.ans?.[q.id])).filter(Boolean);
-      tiles.push({ label: lbl, score: pct45(ratings) });
+  // Build tiles from the spec definition
+  const tiles = CATEGORY_TILES_DEF.map(def => {
+    let score = null;
+    if (def.multiMatch) {
+      // Average pct45 of multiple questions
+      const scores = def.multiMatch
+        .map(tm => findQ(def.catKey, tm))
+        .filter(Boolean)
+        .map(q => pct45(responses.map(r => parseInt(r.ans?.[q.id])).filter(n => !isNaN(n) && n > 0)));
+      const valid = scores.filter(s => s !== null);
+      if (valid.length) score = Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
+    } else {
+      const q = findQ(def.catKey, def.textMatch);
+      if (q) score = pct45(responses.map(r => parseInt(r.ans?.[q.id])).filter(n => !isNaN(n) && n > 0));
     }
-  });
-
-  // Infra – if there's an infra question (fallback: last internal_feedback)
-  const infraQ = qs.find(q => q.category === "internal_feedback" && q.text.toLowerCase().includes("infra"));
-  if (infraQ) {
-    const ratings = responses.map(r => parseInt(r.ans?.[infraQ.id])).filter(Boolean);
-    tiles.push({ label: "Infra", score: pct45(ratings) });
-  }
+    return { label: def.label, score };
+  }).filter(t => t.score !== null);
 
   if (!tiles.length) return null;
+
+  // Group into rows for visual separation by section
+  const sections = [
+    { title: "Managerial Feedback", labels: ["Team","RM","Mentor","BUH"] },
+    { title: "Trust & Growth", labels: ["Transparency","Role","Career Advancement"] },
+    { title: "Culture & Wellbeing", labels: ["WLB","Recognition","Fairness"] },
+    { title: "Internal Support", labels: ["IT","Admin","Finance","PE Team","TA Team"] },
+  ];
 
   return (
     <div style={{ background: "white", border: "1.5px solid #E5E7EB", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
@@ -1756,43 +1771,59 @@ function CategoryOverview({ sv, responses }) {
         <div style={{ width: 4, height: 22, background: "#00519F", borderRadius: 2 }} />
         <span style={{ fontWeight: 800, fontSize: 17, color: "#111827" }}>Category Overview</span>
       </div>
-      <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 18, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <span>ⓘ Org-wide scores by Category</span>
-        <span>• Each score = % of people who rated 4-5 out of 5</span>
-        <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}><span style={{ background:"#DCFCE7", color:"#15803D", padding:"2px 8px", borderRadius:4, fontSize:11, fontWeight:700 }}>≥80%</span></span>
-        <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}><span style={{ background:"#FEF9C3", color:"#A16207", padding:"2px 8px", borderRadius:4, fontSize:11, fontWeight:700 }}>60-79%</span></span>
-        <span style={{ display:"inline-flex", alignItems:"center", gap:4 }}><span style={{ background:"#FEE2E2", color:"#B91C1C", padding:"2px 8px", borderRadius:4, fontSize:11, fontWeight:700 }}>&lt;60%</span></span>
+      <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 20, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span>ⓘ Org-wide scores by Category &nbsp;•&nbsp; Each score = % of people who rated 4-5 out of 5</span>
+        <span style={{ background:"#DCFCE7", color:"#15803D", padding:"2px 8px", borderRadius:4, fontSize:11, fontWeight:700 }}>≥80%</span>
+        <span style={{ background:"#FEF9C3", color:"#A16207", padding:"2px 8px", borderRadius:4, fontSize:11, fontWeight:700 }}>60-79%</span>
+        <span style={{ background:"#FEE2E2", color:"#B91C1C", padding:"2px 8px", borderRadius:4, fontSize:11, fontWeight:700 }}>&lt;60%</span>
+        <span style={{ fontSize: 11, color: "#9CA3AF" }}>• Click to drill down</span>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-        {tiles.map(({ label, score }) => (
-          <div key={label} style={{ background: scoreBg(score), border: `1.5px solid ${score === null ? "#E5E7EB" : score >= 80 ? "#BBF7D0" : score >= 60 ? "#FDE68A" : "#FECACA"}`, borderRadius: 12, padding: "16px 20px", minWidth: 120, textAlign: "center", flex: "1 1 100px" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>{label}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: scoreColor(score) }}>{score !== null ? `${score}%` : "—"}</div>
-            <div style={{ height: 5, background: "#E5E7EB", borderRadius: 99, marginTop: 10, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${score || 0}%`, background: scoreColor(score), borderRadius: 99 }} />
+
+      {sections.map(sec => {
+        const secTiles = tiles.filter(t => sec.labels.includes(t.label));
+        if (!secTiles.length) return null;
+        return (
+          <div key={sec.title} style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10 }}>{sec.title}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {secTiles.map(({ label, score }) => (
+                <div key={label} style={{
+                  background: scoreBg(score),
+                  border: `1.5px solid ${score >= 80 ? "#BBF7D0" : score >= 60 ? "#FDE68A" : "#FECACA"}`,
+                  borderRadius: 12, padding: "14px 18px", minWidth: 110, textAlign: "center", flex: "1 1 90px", maxWidth: 160
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: scoreColor(score), lineHeight: 1 }}>{score}%</div>
+                  <div style={{ height: 4, background: "#E5E7EB", borderRadius: 99, marginTop: 8, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${score}%`, background: scoreColor(score), borderRadius: 99 }} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
-/* ─── CKer Scorecard ─── */
-function CKerScorecard({ sv, responses }) {
+/* ─── Newer Scorecard (renamed from CKer, new scoring formula) ─── */
+function NewerScorecard({ sv, responses }) {
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All"); // Red | Amber | Green | All
+  const [filter, setFilter] = useState("All");
 
-  const qs = (sv.questions || []).filter(q => q.type === "rating");
+  // Get all rating questions (Q1–Q20 = first 20 rating questions)
+  const ratingQs = (sv.questions || []).filter(q => q.type === "rating").slice(0, 20);
 
   const people = responses.map(r => {
-    const ratings = qs.map(q => parseInt(r.ans?.[q.id])).filter(n => !isNaN(n));
-    const score = pct45(ratings);
+    // Collect up to 20 rating answers
+    const ratings20 = ratingQs.map(q => parseInt(r.ans?.[q.id]));
+    const score = newerScore(ratings20); // sum/20*100, integer
     return { name: r.name || r.email, email: r.email, score, rag: ragLabel(score) };
   });
 
-  const red = people.filter(p => p.rag === "Red").length;
+  const red   = people.filter(p => p.rag === "Red").length;
   const amber = people.filter(p => p.rag === "Amber").length;
   const green = people.filter(p => p.rag === "Green").length;
 
@@ -1800,14 +1831,14 @@ function CKerScorecard({ sv, responses }) {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.email.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "All" || p.rag === filter;
     return matchSearch && matchFilter;
-  });
+  }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
 
   return (
     <div style={{ background: "white", border: "1.5px solid #E5E7EB", borderRadius: 16, marginBottom: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", cursor: "pointer" }} onClick={() => setExpanded(e => !e)}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, color: "#374151" }}>{expanded ? "▾" : "▸"}</span>
-          <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>CKer Scorecard</span>
+          <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>Newer Scorecard</span>
           <span style={{ fontSize: 13, color: "#6B7280" }}>{people.length} CKers</span>
           <span style={{ background: "#FEE2E2", color: "#B91C1C", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{red} Red</span>
           <span style={{ background: "#FEF9C3", color: "#A16207", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{amber} Amber</span>
@@ -1818,6 +1849,12 @@ function CKerScorecard({ sv, responses }) {
 
       {expanded && (
         <div style={{ padding: "0 24px 24px" }}>
+          <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 14, background: "#F8FAFB", borderRadius: 8, padding: "10px 14px" }}>
+            ⓘ Score = (Sum of Q1–Q20 ratings) ÷ 20 × 100 &nbsp;•&nbsp;
+            <span style={{ background:"#DCFCE7", color:"#15803D", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>≥80 Green</span>&nbsp;
+            <span style={{ background:"#FEF9C3", color:"#A16207", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>60–79 Amber</span>&nbsp;
+            <span style={{ background:"#FEE2E2", color:"#B91C1C", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>&lt;60 Red</span>
+          </div>
           <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             <input
               style={{ flex: 1, minWidth: 200, padding: "8px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, outline: "none" }}
@@ -1825,7 +1862,7 @@ function CKerScorecard({ sv, responses }) {
               value={search} onChange={e => setSearch(e.target.value)}
             />
             {["Red","Amber","Green","All"].map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{
+              <button key={f} onClick={e => { e.stopPropagation(); setFilter(f); }} style={{
                 padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1.5px solid",
                 background: filter === f ? (f==="Red"?"#EF4444":f==="Amber"?"#F9AD1B":f==="Green"?"#10B981":"#111827") : "white",
                 color: filter === f ? "white" : (f==="Red"?"#EF4444":f==="Amber"?"#D97706":f==="Green"?"#10B981":"#374151"),
@@ -1837,15 +1874,17 @@ function CKerScorecard({ sv, responses }) {
             <table>
               <thead>
                 <tr>
+                  <th style={{ width: 40 }}>#</th>
                   <th>NAME</th>
                   <th>EMAIL</th>
-                  <th>OVERALL SCORE</th>
+                  <th>SCORE (Q1–Q20 ÷ 20 × 100)</th>
                   <th>STATUS</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((p, i) => (
                   <tr key={i}>
+                    <td style={{ color: "#9CA3AF" }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{p.name}</td>
                     <td style={{ fontSize: 12, color: "#6B7280" }}>{p.email}</td>
                     <td>
@@ -1853,7 +1892,7 @@ function CKerScorecard({ sv, responses }) {
                         <div style={{ flex: 1, height: 8, background: "#E5E7EB", borderRadius: 99, overflow: "hidden", minWidth: 80 }}>
                           <div style={{ height: "100%", width: `${p.score || 0}%`, background: scoreColor(p.score), borderRadius: 99 }} />
                         </div>
-                        <span style={{ fontWeight: 700, color: scoreColor(p.score), minWidth: 38 }}>{p.score !== null ? `${p.score}%` : "—"}</span>
+                        <span style={{ fontWeight: 700, color: scoreColor(p.score), minWidth: 40, fontSize: 14 }}>{p.score !== null ? p.score : "—"}</span>
                       </div>
                     </td>
                     <td>
@@ -1865,7 +1904,7 @@ function CKerScorecard({ sv, responses }) {
                     </td>
                   </tr>
                 ))}
-                {!filtered.length && <tr><td colSpan={4} style={{ textAlign: "center", color: "#9CA3AF", padding: 24 }}>No results found</td></tr>}
+                {!filtered.length && <tr><td colSpan={5} style={{ textAlign: "center", color: "#9CA3AF", padding: 24 }}>No results found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1875,7 +1914,7 @@ function CKerScorecard({ sv, responses }) {
   );
 }
 
-/* ─── RM Scorecard ─── */
+/* ─── RM Scorecard (category-based %) ─── */
 function RMScorecard({ sv, responses }) {
   const [expanded, setExpanded] = useState(true);
   const [search, setSearch] = useState("");
@@ -1886,49 +1925,48 @@ function RMScorecard({ sv, responses }) {
 
   const qs = sv.questions || [];
 
-  // Get the question object for each RM dimension
-  const dimQMap = RM_DIMENSIONS.map(dim => {
-    const catQs = qs.filter(q => q.category === dim.catKey);
-    return { ...dim, q: catQs[dim.qIdx] || null };
+  // Pre-group questions by category for fast lookup
+  const qsByCat = {};
+  SCORECARD_CAT_COLS.forEach(col => {
+    qsByCat[col.key] = qs.filter(q => q.category === col.key && q.type === "rating");
   });
+  const allRatingQs = qs.filter(q => q.type === "rating");
 
-  // Group responses by respondent's RM name
-  // Since we don't have a "who is your RM" field, we use the respondent's email/name
-  // and treat each respondent as their own entry (individual scorecard)
+  // Group responses by respondent (each respondent = 1 row, using rmName/rmEmail if present)
   const rmMap = {};
   responses.forEach(r => {
-    const rmKey = r.rmEmail || r.rmName || r.name || r.email;
-    if (!rmMap[rmKey]) rmMap[rmKey] = { name: r.rmName || r.name || r.email, email: r.rmEmail || r.email, responses: [] };
-    rmMap[rmKey].responses.push(r);
+    const key = r.rmEmail || r.rmName || r.email;
+    if (!rmMap[key]) rmMap[key] = { name: r.rmName || r.name || r.email, email: r.rmEmail || r.email, responses: [] };
+    rmMap[key].responses.push(r);
   });
 
   const rmRows = Object.values(rmMap).map(rm => {
-    const dimScores = dimQMap.map(({ key, q }) => {
-      if (!q) return { key, score: null };
-      const ratings = rm.responses.map(r => parseInt(r.ans?.[q.id])).filter(n => !isNaN(n));
-      return { key, score: pct45(ratings) };
+    // Category scores: pct45 of all rating questions in that category
+    const catScores = SCORECARD_CAT_COLS.map(col => {
+      const catQs = qsByCat[col.key];
+      if (!catQs || !catQs.length) return { key: col.key, score: null };
+      const ratings = rm.responses.flatMap(r => catQs.map(q => parseInt(r.ans?.[q.id]))).filter(n => !isNaN(n) && n > 0);
+      return { key: col.key, score: pct45(ratings) };
     });
-    const allRatings = rm.responses.flatMap(r =>
-      (sv.questions || []).filter(q => q.type === "rating").map(q => parseInt(r.ans?.[q.id])).filter(n => !isNaN(n))
-    );
+    // Overall: pct45 across all rating questions
+    const allRatings = rm.responses.flatMap(r => allRatingQs.map(q => parseInt(r.ans?.[q.id]))).filter(n => !isNaN(n) && n > 0);
     const overall = pct45(allRatings);
-    return { name: rm.name, email: rm.email, respCount: rm.responses.length, dimScores, overall };
+    return { name: rm.name, email: rm.email, respCount: rm.responses.length, catScores, overall };
   });
 
-  const red = rmRows.filter(r => ragLabel(r.overall) === "Red").length;
+  const red   = rmRows.filter(r => ragLabel(r.overall) === "Red").length;
   const amber = rmRows.filter(r => ragLabel(r.overall) === "Amber").length;
   const green = rmRows.filter(r => ragLabel(r.overall) === "Green").length;
 
   const filtered = rmRows.filter(r => {
     const matchSearch = !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "All" || ragLabel(r.overall) === filter;
-    const matchDim = !anyDimFilter || r.dimScores.some(d => d.score !== null && d.score < 60);
+    const matchDim = !anyDimFilter || r.catScores.some(d => d.score !== null && d.score < 60);
     return matchSearch && matchFilter && matchDim;
   }).sort((a, b) => {
-    let av = sortCol === "overall" ? a.overall : (a.dimScores.find(d => d.key === sortCol)?.score ?? -1);
-    let bv = sortCol === "overall" ? b.overall : (b.dimScores.find(d => d.key === sortCol)?.score ?? -1);
-    if (av === null) av = -1;
-    if (bv === null) bv = -1;
+    let av = sortCol === "overall" ? a.overall : (a.catScores.find(d => d.key === sortCol)?.score ?? -1);
+    let bv = sortCol === "overall" ? b.overall : (b.catScores.find(d => d.key === sortCol)?.score ?? -1);
+    if (av === null) av = -1; if (bv === null) bv = -1;
     return sortDir === "desc" ? bv - av : av - bv;
   });
 
@@ -1937,21 +1975,17 @@ function RMScorecard({ sv, responses }) {
     else { setSortCol(col); setSortDir("desc"); }
   };
 
-  function ScoreCell({ score }) {
-    if (score === null) return <td style={{ textAlign: "center", color: "#9CA3AF" }}>—</td>;
-    return (
-      <td style={{ textAlign: "center" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: scoreBg(score), color: scoreColor(score), fontWeight: 700, fontSize: 13, borderRadius: 8, padding: "5px 14px", minWidth: 56 }}>
-          {score}%
-        </div>
-      </td>
-    );
-  }
+  const thStyle = (col) => ({
+    padding: "11px 10px", textAlign: "center", background: sortCol === col ? "#EEF4FF" : "#F8FAFB",
+    fontWeight: 700, fontSize: 10, color: sortCol === col ? "#00519F" : "#374151",
+    textTransform: "uppercase", letterSpacing: "0.6px", cursor: "pointer", whiteSpace: "nowrap",
+    borderBottom: "2px solid #E5E7EB"
+  });
 
   return (
     <div style={{ background: "white", border: "1.5px solid #E5E7EB", borderRadius: 16, marginBottom: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", cursor: "pointer" }} onClick={() => setExpanded(e => !e)}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, color: "#374151" }}>{expanded ? "▾" : "▸"}</span>
           <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>RM Scorecard</span>
           <span style={{ fontSize: 13, color: "#6B7280" }}>{rmRows.length} people</span>
@@ -1965,7 +1999,7 @@ function RMScorecard({ sv, responses }) {
       {expanded && (
         <div style={{ padding: "0 24px 24px" }}>
           <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 14 }}>
-            ⓘ Feedback/Ratings from direct reports • Each score = % who gave 4-5 out of 5 &nbsp;
+            ⓘ Feedback/Ratings from direct reports &nbsp;•&nbsp; Each score = % who gave 4-5 out of 5 per category &nbsp;
             <span style={{ background:"#DCFCE7", color:"#15803D", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>≥80%</span>&nbsp;
             <span style={{ background:"#FEF9C3", color:"#A16207", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>60-79%</span>&nbsp;
             <span style={{ background:"#FEE2E2", color:"#B91C1C", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>&lt;60%</span>
@@ -1987,23 +2021,23 @@ function RMScorecard({ sv, responses }) {
             <button onClick={e => { e.stopPropagation(); setAnyDimFilter(v => !v); }} style={{
               padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1.5px solid",
               background: anyDimFilter ? "#EF4444" : "white", color: anyDimFilter ? "white" : "#374151", borderColor: "#EF4444"
-            }}>Any Dim &lt;60%</button>
+            }}>Any Cat &lt;60%</button>
           </div>
 
           <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid #E5E7EB" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={{ padding: "12px 16px", textAlign: "left", background: "#F8FAFB", fontWeight: 700, fontSize: 11, color: "#374151", textTransform: "uppercase", letterSpacing: "0.8px", cursor: "pointer", whiteSpace: "nowrap" }} onClick={() => handleSort("name")}>
-                    RM {sortCol === "name" ? (sortDir === "desc" ? "↓" : "↑") : "⇅"}
+                  <th style={{ ...thStyle("name"), textAlign: "left", padding: "11px 16px" }} onClick={() => handleSort("name")}>
+                    RM {sortCol === "name" ? (sortDir==="desc"?"↓":"↑") : "⇅"}
                   </th>
-                  <th style={{ padding: "12px 10px", textAlign: "center", background: "#F8FAFB", fontWeight: 700, fontSize: 11, color: "#374151", textTransform: "uppercase", letterSpacing: "0.8px", whiteSpace: "nowrap" }}>RESP.</th>
-                  {dimQMap.map(({ key, label }) => (
-                    <th key={key} onClick={() => handleSort(key)} style={{ padding: "12px 10px", textAlign: "center", background: "#F8FAFB", fontWeight: 700, fontSize: 11, color: sortCol === key ? "#00519F" : "#374151", textTransform: "uppercase", letterSpacing: "0.8px", cursor: "pointer", whiteSpace: "nowrap" }}>
-                      {label} {sortCol === key ? (sortDir === "desc" ? "↓" : "↑") : "⇅"}
+                  <th style={{ ...thStyle(null), cursor: "default" }}>RESP.</th>
+                  {SCORECARD_CAT_COLS.map(col => (
+                    <th key={col.key} style={thStyle(col.key)} onClick={() => handleSort(col.key)}>
+                      {col.label} {sortCol === col.key ? (sortDir==="desc"?"↓":"↑") : "⇅"}
                     </th>
                   ))}
-                  <th onClick={() => handleSort("overall")} style={{ padding: "12px 10px", textAlign: "center", background: sortCol === "overall" ? "#EEF4FF" : "#F8FAFB", fontWeight: 700, fontSize: 11, color: "#00519F", textTransform: "uppercase", letterSpacing: "0.8px", cursor: "pointer", whiteSpace: "nowrap", borderLeft: "2px solid #E5E7EB" }}>
+                  <th style={{ ...thStyle("overall"), borderLeft: "2px solid #E5E7EB", color: "#00519F" }} onClick={() => handleSort("overall")}>
                     OVERALL {sortDir === "desc" ? "↓" : "↑"}
                   </th>
                 </tr>
@@ -2011,19 +2045,23 @@ function RMScorecard({ sv, responses }) {
               <tbody>
                 {filtered.map((rm, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #F3F4F6" }}>
-                    <td style={{ padding: "12px 16px", fontWeight: 600, whiteSpace: "nowrap" }}>{rm.name}</td>
-                    <td style={{ padding: "12px 10px", textAlign: "center", color: "#6B7280" }}>{rm.respCount}</td>
-                    {rm.dimScores.map(({ key, score }) => (
-                      <ScoreCell key={key} score={score} />
+                    <td style={{ padding: "11px 16px", fontWeight: 600, whiteSpace: "nowrap" }}>{rm.name}</td>
+                    <td style={{ padding: "11px 10px", textAlign: "center", color: "#6B7280" }}>{rm.respCount}</td>
+                    {rm.catScores.map(({ key, score }) => (
+                      <td key={key} style={{ padding: "11px 10px", textAlign: "center" }}>
+                        {score !== null
+                          ? <span style={{ display:"inline-block", background: scoreBg(score), color: scoreColor(score), fontWeight: 700, fontSize: 12, borderRadius: 7, padding: "4px 10px" }}>{score}%</span>
+                          : <span style={{ color: "#D1D5DB" }}>—</span>}
+                      </td>
                     ))}
-                    <td style={{ padding: "12px 10px", textAlign: "center", borderLeft: "2px solid #E5E7EB" }}>
-                      <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: scoreBg(rm.overall), color: scoreColor(rm.overall), fontWeight: 800, fontSize: 14, borderRadius: 8, padding: "5px 14px", minWidth: 60 }}>
+                    <td style={{ padding: "11px 10px", textAlign: "center", borderLeft: "2px solid #E5E7EB" }}>
+                      <span style={{ display:"inline-block", background: scoreBg(rm.overall), color: scoreColor(rm.overall), fontWeight: 800, fontSize: 13, borderRadius: 8, padding: "5px 14px" }}>
                         {rm.overall !== null ? `${rm.overall}%` : "—"}
-                      </div>
+                      </span>
                     </td>
                   </tr>
                 ))}
-                {!filtered.length && <tr><td colSpan={dimQMap.length + 3} style={{ textAlign: "center", color: "#9CA3AF", padding: 28 }}>No results found</td></tr>}
+                {!filtered.length && <tr><td colSpan={SCORECARD_CAT_COLS.length + 3} style={{ textAlign: "center", color: "#9CA3AF", padding: 28 }}>No results found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2033,63 +2071,146 @@ function RMScorecard({ sv, responses }) {
   );
 }
 
-/* ─── Track Lead Scorecard ─── */
+/* ─── Track Lead Scorecard (category-based %) ─── */
 function TrackLeadScorecard({ sv, responses }) {
   const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [sortCol, setSortCol] = useState("overall");
+  const [sortDir, setSortDir] = useState("desc");
 
-  const tlQ = (sv.questions || []).find(q => q.category === "managerial_feedback" && q.text.toLowerCase().includes("bu head"));
+  const qs = sv.questions || [];
 
-  const rows = responses.map(r => {
-    const score = tlQ ? pct45([parseInt(r.ans?.[tlQ.id])].filter(n => !isNaN(n))) : null;
-    return { name: r.name || r.email, email: r.email, score };
+  // Same category columns as RM scorecard
+  const qsByCat = {};
+  SCORECARD_CAT_COLS.forEach(col => {
+    qsByCat[col.key] = qs.filter(q => q.category === col.key && q.type === "rating");
+  });
+  const allRatingQs = qs.filter(q => q.type === "rating");
+
+  // Each respondent = one row (using tlName/tlEmail if present)
+  const tlMap = {};
+  responses.forEach(r => {
+    const key = r.tlEmail || r.tlName || r.email;
+    if (!tlMap[key]) tlMap[key] = { name: r.tlName || r.name || r.email, email: r.tlEmail || r.email, responses: [] };
+    tlMap[key].responses.push(r);
   });
 
-  const red = rows.filter(r => ragLabel(r.score) === "Red").length;
-  const amber = rows.filter(r => ragLabel(r.score) === "Amber").length;
-  const green = rows.filter(r => ragLabel(r.score) === "Green").length;
+  const tlRows = Object.values(tlMap).map(tl => {
+    const catScores = SCORECARD_CAT_COLS.map(col => {
+      const catQs = qsByCat[col.key];
+      if (!catQs || !catQs.length) return { key: col.key, score: null };
+      const ratings = tl.responses.flatMap(r => catQs.map(q => parseInt(r.ans?.[q.id]))).filter(n => !isNaN(n) && n > 0);
+      return { key: col.key, score: pct45(ratings) };
+    });
+    const allRatings = tl.responses.flatMap(r => allRatingQs.map(q => parseInt(r.ans?.[q.id]))).filter(n => !isNaN(n) && n > 0);
+    const overall = pct45(allRatings);
+    return { name: tl.name, email: tl.email, respCount: tl.responses.length, catScores, overall };
+  });
+
+  const red   = tlRows.filter(r => ragLabel(r.overall) === "Red").length;
+  const amber = tlRows.filter(r => ragLabel(r.overall) === "Amber").length;
+  const green = tlRows.filter(r => ragLabel(r.overall) === "Green").length;
+
+  const filtered = tlRows.filter(r => {
+    const matchSearch = !search || r.name.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === "All" || ragLabel(r.overall) === filter;
+    return matchSearch && matchFilter;
+  }).sort((a, b) => {
+    let av = sortCol === "overall" ? a.overall : (a.catScores.find(d => d.key === sortCol)?.score ?? -1);
+    let bv = sortCol === "overall" ? b.overall : (b.catScores.find(d => d.key === sortCol)?.score ?? -1);
+    if (av === null) av = -1; if (bv === null) bv = -1;
+    return sortDir === "desc" ? bv - av : av - bv;
+  });
+
+  const handleSort = col => {
+    if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const thStyle = (col) => ({
+    padding: "11px 10px", textAlign: "center", background: sortCol === col ? "#EEF4FF" : "#F8FAFB",
+    fontWeight: 700, fontSize: 10, color: sortCol === col ? "#00519F" : "#374151",
+    textTransform: "uppercase", letterSpacing: "0.6px", cursor: "pointer", whiteSpace: "nowrap",
+    borderBottom: "2px solid #E5E7EB"
+  });
 
   return (
     <div style={{ background: "white", border: "1.5px solid #E5E7EB", borderRadius: 16, marginBottom: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", cursor: "pointer" }} onClick={() => setExpanded(e => !e)}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 16, color: "#374151" }}>{expanded ? "▾" : "▸"}</span>
           <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>Track Lead Scorecard</span>
-          <span style={{ fontSize: 13, color: "#6B7280" }}>{rows.length} people</span>
+          <span style={{ fontSize: 13, color: "#6B7280" }}>{tlRows.length} people</span>
           {red > 0 && <span style={{ background: "#FEE2E2", color: "#B91C1C", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{red} Red</span>}
           {amber > 0 && <span style={{ background: "#FEF9C3", color: "#A16207", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{amber} Amber</span>}
           <span style={{ background: "#DCFCE7", color: "#15803D", borderRadius: 99, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{green} Green</span>
         </div>
         <span style={{ fontSize: 12, color: "#9CA3AF" }}>Click to {expanded ? "collapse" : "expand"}</span>
       </div>
+
       {expanded && (
         <div style={{ padding: "0 24px 24px" }}>
-          <div className="table-wrapper">
-            <table>
+          <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 14 }}>
+            ⓘ Category-based scores per Track Lead &nbsp;•&nbsp; Each score = % who gave 4-5 out of 5 per category &nbsp;
+            <span style={{ background:"#DCFCE7", color:"#15803D", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>≥80%</span>&nbsp;
+            <span style={{ background:"#FEF9C3", color:"#A16207", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>60-79%</span>&nbsp;
+            <span style={{ background:"#FEE2E2", color:"#B91C1C", padding:"2px 7px", borderRadius:4, fontSize:11, fontWeight:700 }}>&lt;60%</span>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              style={{ flex: 1, minWidth: 200, padding: "8px 14px", border: "1.5px solid #E5E7EB", borderRadius: 8, fontSize: 13, outline: "none" }}
+              placeholder="🔍 Search by name or email..."
+              value={search} onChange={e => setSearch(e.target.value)}
+            />
+            {["Red","Amber","Green","All"].map(f => (
+              <button key={f} onClick={e => { e.stopPropagation(); setFilter(f); }} style={{
+                padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1.5px solid",
+                background: filter === f ? (f==="Red"?"#EF4444":f==="Amber"?"#F9AD1B":f==="Green"?"#10B981":"#111827") : "white",
+                color: filter === f ? "white" : (f==="Red"?"#EF4444":f==="Amber"?"#D97706":f==="Green"?"#10B981":"#374151"),
+                borderColor: f==="Red"?"#EF4444":f==="Amber"?"#F9AD1B":f==="Green"?"#10B981":"#E5E7EB"
+              }}>{f}</button>
+            ))}
+          </div>
+
+          <div style={{ overflowX: "auto", borderRadius: 12, border: "1px solid #E5E7EB" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>NAME</th>
-                  <th>BU HEAD APPROACHABILITY</th>
-                  <th>STATUS</th>
+                  <th style={{ ...thStyle("name"), textAlign: "left", padding: "11px 16px" }} onClick={() => handleSort("name")}>
+                    TRACK LEAD {sortCol === "name" ? (sortDir==="desc"?"↓":"↑") : "⇅"}
+                  </th>
+                  <th style={{ ...thStyle(null), cursor: "default" }}>RESP.</th>
+                  {SCORECARD_CAT_COLS.map(col => (
+                    <th key={col.key} style={thStyle(col.key)} onClick={() => handleSort(col.key)}>
+                      {col.label} {sortCol === col.key ? (sortDir==="desc"?"↓":"↑") : "⇅"}
+                    </th>
+                  ))}
+                  <th style={{ ...thStyle("overall"), borderLeft: "2px solid #E5E7EB", color: "#00519F" }} onClick={() => handleSort("overall")}>
+                    OVERALL {sortDir === "desc" ? "↓" : "↑"}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
-                  <tr key={i}>
-                    <td>{i + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{r.name}</td>
-                    <td>
-                      <div style={{ display: "inline-flex", alignItems: "center", background: scoreBg(r.score), color: scoreColor(r.score), fontWeight: 700, borderRadius: 8, padding: "5px 14px" }}>
-                        {r.score !== null ? `${r.score}%` : "—"}
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ padding: "4px 12px", borderRadius: 99, fontSize: 12, fontWeight: 700, background: r.score >= 80 ? "#DCFCE7" : r.score >= 60 ? "#FEF9C3" : "#FEE2E2", color: r.score >= 80 ? "#065F46" : r.score >= 60 ? "#92400E" : "#B91C1C" }}>
-                        {ragLabel(r.score)}
+                {filtered.map((tl, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                    <td style={{ padding: "11px 16px", fontWeight: 600, whiteSpace: "nowrap" }}>{tl.name}</td>
+                    <td style={{ padding: "11px 10px", textAlign: "center", color: "#6B7280" }}>{tl.respCount}</td>
+                    {tl.catScores.map(({ key, score }) => (
+                      <td key={key} style={{ padding: "11px 10px", textAlign: "center" }}>
+                        {score !== null
+                          ? <span style={{ display:"inline-block", background: scoreBg(score), color: scoreColor(score), fontWeight: 700, fontSize: 12, borderRadius: 7, padding: "4px 10px" }}>{score}%</span>
+                          : <span style={{ color: "#D1D5DB" }}>—</span>}
+                      </td>
+                    ))}
+                    <td style={{ padding: "11px 10px", textAlign: "center", borderLeft: "2px solid #E5E7EB" }}>
+                      <span style={{ display:"inline-block", background: scoreBg(tl.overall), color: scoreColor(tl.overall), fontWeight: 800, fontSize: 13, borderRadius: 8, padding: "5px 14px" }}>
+                        {tl.overall !== null ? `${tl.overall}%` : "—"}
                       </span>
                     </td>
                   </tr>
                 ))}
+                {!filtered.length && <tr><td colSpan={SCORECARD_CAT_COLS.length + 3} style={{ textAlign: "center", color: "#9CA3AF", padding: 28 }}>No results found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -2165,7 +2286,7 @@ function AnalyticsView({ sv, responses, categoryFilter, setCategoryFilter }) {
       {analyticsTab === "overview" && (
         <div>
           <CategoryOverview sv={sv} responses={responses} />
-          <CKerScorecard sv={sv} responses={responses} />
+          <NewerScorecard sv={sv} responses={responses} />
           <TrackLeadScorecard sv={sv} responses={responses} />
           <RMScorecard sv={sv} responses={responses} />
         </div>
